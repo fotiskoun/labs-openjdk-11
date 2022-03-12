@@ -21,6 +21,8 @@
  * questions.
  */
 
+#include <typeinfo>
+
 #include "precompiled.hpp"
 #include "compiler/compileBroker.hpp"
 #include "gc/shared/oopStorage.inline.hpp"
@@ -43,6 +45,10 @@
 #if INCLUDE_G1GC
 #include "gc/g1/g1ThreadLocalData.hpp"
 #endif // INCLUDE_G1GC
+
+#define MEM_COPY_CAPACITY 50000 // Size of the Hash Table
+#define OPERATOR_CAPACITY 50000 // Size of the Hash Table
+#define QUEUESIZE  10
 
 // Simple helper to see if the caller of a runtime stub which
 // entered the VM has been deoptimized
@@ -418,6 +424,383 @@ JRT_LEAF(jboolean, JVMCIRuntime::object_notifyAll(JavaThread *thread, oopDesc* o
   return false; // caller must perform slow path
 
 JRT_END
+
+
+
+typedef struct {
+    typeArrayOopDesc *key;
+    int startingPosition;
+    typeArrayOopDesc *value;
+} item;
+
+long hash_function(typeArrayOopDesc *key, jint startingPosition) {
+  int len = 8;
+  static const uint32_t c1 = 0xcc9e2d51;
+  static const uint32_t c2 = 0x1b873593;
+  static const uint32_t r1 = 15;
+  static const uint32_t r2 = 13;
+  static const uint32_t m = 5;
+  static const uint32_t n = 0xe6546b64;
+
+  uint32_t hash = 0;
+
+  const int nblocks = len / 4;
+  uint32_t *blocks = 0;
+  int capacityMod = 0;
+  if(startingPosition> -1){
+    capacityMod = MEM_COPY_CAPACITY;
+    blocks = (uint32_t *) key + startingPosition;
+  } else {
+    capacityMod = OPERATOR_CAPACITY;
+    blocks = (uint32_t *) key;
+  }
+  int i;
+  for (i = 0; i < nblocks; i++) {
+    uint32_t k = blocks[i];
+    k *= c1;
+    k = (k << r1) | (k >> (32 - r1));
+    k *= c2;
+    hash ^= k;
+    hash = ((hash << r2) | (hash >> (32 - r2))) * m + n;
+  }
+
+  const uint8_t *tail = (const uint8_t *) (key + nblocks * 4);
+  uint32_t k1 = 0;
+
+  switch (len & 3) {
+    case 3:
+      k1 ^= tail[2] << 16;
+    case 2:
+      k1 ^= tail[1] << 8;
+    case 1:
+      k1 ^= tail[0];
+
+      k1 *= c1;
+      k1 = (k1 << r1) | (k1 >> (32 - r1));
+      k1 *= c2;
+      hash ^= k1;
+  }
+
+  hash ^= len;
+  hash ^= (hash >> 16);
+  hash *= 0x85ebca6b;
+  hash ^= (hash >> 13);
+  hash *= 0xc2b2ae35;
+  hash ^= (hash >> 16);
+
+  return hash % capacityMod;
+}
+
+typedef struct Ht_item Ht_item;
+
+struct Ht_item {
+    typeArrayOopDesc *key;
+    int startingPosition;
+    typeArrayOopDesc *value;
+};
+
+typedef struct HashTable HashTable;
+
+// Define the Hash Table here
+struct HashTable {
+    // Contains an array of pointers
+    // to items
+    Ht_item **items;
+    int size;
+    int count;
+};
+
+
+Ht_item *create_item(typeArrayOopDesc *key, int startingPosition, typeArrayOopDesc *value) {
+  // Creates a pointer to a new hash table item
+  Ht_item *item = (Ht_item *) malloc(sizeof(Ht_item));
+
+  item->key = key;
+  item->startingPosition = startingPosition;
+  item->value = value;
+
+  return item;
+}
+
+HashTable *create_table(int size) {
+  // Creates a new HashTable
+  HashTable *table = (HashTable *) malloc(sizeof(HashTable));
+  table->size = size;
+  table->count = 0;
+  table->items = (Ht_item **) calloc(table->size, sizeof(Ht_item *));
+  for (int i = 0; i < table->size; i++)
+    table->items[i] = NULL;
+
+  return table;
+}
+
+void free_item(Ht_item *item) {
+  // Frees an item
+  free(item->key);
+  free(item->value);
+  free(item);
+}
+
+void free_table(HashTable *table) {
+  // Frees the table
+  for (int i = 0; i < table->size; i++) {
+    Ht_item *item = table->items[i];
+    if (item != NULL)
+      free_item(item);
+  }
+
+  free(table->items);
+  free(table);
+}
+
+void handle_mem_collision(HashTable *table, Ht_item *item, int index) {
+  for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
+    Ht_item *current_item = table->items[(index + i) % MEM_COPY_CAPACITY];
+    if (current_item == NULL) {
+      table->items[(index + i) % MEM_COPY_CAPACITY] = item;
+      table->count++;
+//      printf("new addition from collision %p \n", table->items[(index + i) % MEM_COPY_CAPACITY]->key);
+      return;
+    } else if (item->key == current_item->key) {
+//      printf("value update in the collision %p %p %p %p\n", current_item->key, current_item->value, key, value);
+      table->items[(index + i) % MEM_COPY_CAPACITY]->value = item->value;
+      table->items[(index + i) % MEM_COPY_CAPACITY]->startingPosition = item->startingPosition;
+      return;
+    }
+  }
+  printf("THE COLLISION COULD NOT BE RESOLVED");
+}
+
+bool ht_insert_mem_map(HashTable *table, typeArrayOopDesc *key, jint startingPosition, typeArrayOopDesc *value) {
+  // Create the item
+  Ht_item *item = create_item(key, startingPosition, value);
+
+  // Compute the index
+  int index = hash_function(key, -1);
+
+  Ht_item *current_item = table->items[index];
+  if (current_item == NULL) {
+    // Key does not exist.
+    if (table->count == table->size) {
+      // Hash Table Full
+      printf("INSERT ERROR: Hash Table is full\n");
+      free_item(item);
+      return false;
+    }
+    // Insert directly
+    table->items[index] = item;
+    table->count++;
+//    printf("new simple addition\n");
+    return true;
+  } else {
+    // Scenario 1: We only need to update value
+    if (key == current_item->key) {
+//      printf("Value updated %p %p %p %p \n", current_item->key, current_item->value, key, value);
+      table->items[index]->value = value;
+      table->items[index]->startingPosition = startingPosition;
+      return true;
+    }
+    else {
+    // Scenario 2: Collision
+    handle_mem_collision(table, item, index);
+    return true;
+    }
+  }
+}
+
+void handle_operator_collision(HashTable *table, Ht_item *item, int index) {
+  for (int i = 1; i < OPERATOR_CAPACITY; i++) {
+    Ht_item *current_item = table->items[(index + i) % OPERATOR_CAPACITY];
+    if (current_item == NULL) {
+      table->items[(index + i) % OPERATOR_CAPACITY] = item;
+      table->count++;
+//      printf("new addition from collision %p \n", table->items[(index + i) % MEM_COPY_CAPACITY]->key);
+      return;
+    } else if (item->key == current_item->key && item->startingPosition == current_item->startingPosition) {
+//      printf("value update in the collision %p %p %p %p\n", current_item->key, current_item->value, key, value);
+      table->items[(index + i) % OPERATOR_CAPACITY]->value = item->value;
+      return;
+    }
+  }
+  printf("THE COLLISION COULD NOT BE RESOLVED");
+}
+
+
+bool ht_insert_operator_map(HashTable *table, typeArrayOopDesc *key, jint startingPosition, typeArrayOopDesc *value) {
+  // Create the item
+  Ht_item *item = create_item(key, startingPosition, value);
+
+  // Compute the index
+  int index = hash_function(key, startingPosition);
+
+  Ht_item *current_item = table->items[index];
+  if (current_item == NULL) {
+    // Key does not exist.
+    if (table->count == table->size) {
+      // Hash Table Full
+      printf("INSERT ERROR: Hash Table is full\n");
+      free_item(item);
+      return false;
+    }
+    // Insert directly
+    table->items[index] = item;
+    table->count++;
+//    printf("new simple addition\n");
+    return true;
+  } else {
+    // Scenario 1: We only need to update value
+    if (key == current_item->key && startingPosition == current_item->startingPosition) {
+//      printf("Value updated %p %p %p %p \n", current_item->key, current_item->value, key, value);
+      table->items[index]->value = value;
+      return true;
+    }
+    else {
+      // Scenario 2: Collision
+      handle_operator_collision(table, item, index);
+      return true;
+    }
+  }
+}
+
+
+typeArrayOopDesc *ht_search_mem_array(HashTable *table, typeArrayOopDesc *key) {
+  // Searches the key in the hashtable
+  // and returns NULL if it doesn't exist
+  int index = hash_function(key, -1);
+  Ht_item *item = table->items[index];
+
+
+  // Ensure that we move to a non NULL item
+  if (item != NULL) {
+    if (item->key == key) {
+      return item->value;
+    } else {
+      //CHECK FOR COLLISIONS
+      for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
+        Ht_item *collisionItem = table->items[(index + i) % MEM_COPY_CAPACITY];
+        if (collisionItem != NULL) {
+          if (collisionItem->key == key) {
+            return collisionItem->value;
+          }
+        } else {
+          //The item is not here
+          return NULL;
+        }
+      }
+    }
+  }
+  return NULL;
+}
+
+jint ht_search_mem_starting_pos(HashTable *table, typeArrayOopDesc *key) {
+  // Searches the key in the hashtable
+  // and returns NULL if it doesn't exist
+  int index = hash_function(key, -1);
+  Ht_item *item = table->items[index];
+
+
+  // Ensure that we move to a non NULL item
+  if (item != NULL) {
+    if (item->key == key) {
+      return item->startingPosition;
+    } else {
+      //CHECK FOR COLLISIONS
+      for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
+        Ht_item *collisionItem = table->items[(index + i) % MEM_COPY_CAPACITY];
+        if (collisionItem != NULL) {
+          if (collisionItem->key == key) {
+            return collisionItem->startingPosition;
+          }
+        } else {
+          //The item is not here
+          return -1;
+        }
+      }
+    }
+  }
+  return -1;
+}
+
+typeArrayOopDesc *ht_search_operator_array(HashTable *table, typeArrayOopDesc *key, jint startingPos) {
+  // Searches the key in the hashtable
+  // and returns NULL if it doesn't exist
+  int index = hash_function(key, startingPos);
+  Ht_item *item = table->items[index];
+
+
+  // Ensure that we move to a non NULL item
+  if (item != NULL) {
+    if (item->key == key && item->startingPosition == startingPos) {
+      return item->value;
+    } else {
+      //CHECK FOR COLLISIONS
+      for (int i = 1; i < OPERATOR_CAPACITY; i++) {
+        Ht_item *collisionItem = table->items[(index + i) % OPERATOR_CAPACITY];
+        if (collisionItem != NULL) {
+          if (collisionItem->key == key && collisionItem->startingPosition == startingPos) {
+            return collisionItem->value;
+          }
+        } else {
+          //The item is not here
+          return NULL;
+        }
+      }
+    }
+  }
+  return NULL;
+}
+
+
+HashTable *htMemCopy = create_table(MEM_COPY_CAPACITY);
+HashTable *htOperator = create_table(OPERATOR_CAPACITY);
+
+// Object.hash_put() to add items in map, with 0 add to memcopy map and with 1 in operator
+JRT_LEAF(jboolean,
+         JVMCIRuntime::object_hash_put(JavaThread * thread, typeArrayOopDesc* ar1, jint startingPosition, typeArrayOopDesc* ar2, jint checkMap))
+
+  if(checkMap == 0){ //inserting in mem map
+//    printf("I start put in memory pointer1 %p pointer2 %p\n", ar1, ar2);
+    return ht_insert_mem_map(htMemCopy, ar1, startingPosition, ar2);
+  } else if (checkMap == 1){ //inserting in operator map
+    printf("I start put in operator pointer1 %p pointer2 %p\n", ar1, ar2);
+    return ht_insert_operator_map(htOperator, ar1, startingPosition, ar2);
+  }
+  printf("checkMap value was not recognised");
+  return false;
+
+JRT_END
+
+// Object.hash_memory_array_get() fast path, caller does slow path
+JRT_LEAF(void , JVMCIRuntime::object_hash_memory_array_get(JavaThread* thread, typeArrayOopDesc* ar1))
+  typeArrayOopDesc* valueArray = ht_search_mem_array(htMemCopy, ar1);
+  printf("while I get memory with pointer %p and take pointer %p  and don'tcare about given pointer %p", ar1, valueArray, ar1);
+
+  thread-> set_vm_result(valueArray);
+//  printf("after I get memory");
+
+JRT_END
+
+// Object.hash_memory_starting_pos_get() fast path, caller does slow path
+JRT_LEAF(jint , JVMCIRuntime::object_hash_memory_starting_pos_get(JavaThread * thread, typeArrayOopDesc * ar1))
+
+  return ht_search_mem_starting_pos(htMemCopy, ar1);
+//  printf("This is the get %p %p\n", ar1, valueArray);
+
+
+JRT_END
+
+// Object.hash_operator_get() fast path, caller does slow path
+JRT_LEAF(void , JVMCIRuntime::object_hash_operator_get(JavaThread * thread, typeArrayOopDesc * ar1, jint startingPos))
+//printf("operator get before");
+  typeArrayOopDesc* valueArray = ht_search_operator_array(htOperator, ar1, startingPos);
+//  printf("This is the get %p %p\n", ar1, valueArray);
+//  printf("operator get meanwhile");
+
+  thread-> set_vm_result(valueArray);
+//  printf("operator get after");
+
+JRT_END
+
 
 JRT_BLOCK_ENTRY(int, JVMCIRuntime::throw_and_post_jvmti_exception(JavaThread* thread, const char* exception, const char* message))
   JRT_BLOCK;

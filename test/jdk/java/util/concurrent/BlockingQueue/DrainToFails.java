@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class DrainToFails {
-    final int CAPACITY = 10;
+    final int MEM_COPY_CAPACITY = 10;
     final int SMALL = 2;
 
     void test(String[] args) throws Throwable {
@@ -64,9 +64,9 @@ public class DrainToFails {
         testUnbounded(new LinkedBlockingDeque());
         testUnbounded(new PriorityBlockingQueue());
 
-        testBounded(new LinkedBlockingQueue(CAPACITY));
-        testBounded(new LinkedBlockingDeque(CAPACITY));
-        testBounded(new ArrayBlockingQueue(CAPACITY));
+        testBounded(new LinkedBlockingQueue(MEM_COPY_CAPACITY));
+        testBounded(new LinkedBlockingDeque(MEM_COPY_CAPACITY));
+        testBounded(new ArrayBlockingQueue(MEM_COPY_CAPACITY));
     }
 
     static class PDelay
@@ -98,7 +98,7 @@ public class DrainToFails {
 
     void testDelayQueue(final BlockingQueue q) throws Throwable {
         System.err.println(q.getClass().getSimpleName());
-        for (int i = 0; i < CAPACITY; i++)
+        for (int i = 0; i < MEM_COPY_CAPACITY; i++)
             q.add(new PDelay(i));
         ArrayBlockingQueue q2 = new ArrayBlockingQueue(SMALL);
         try {
@@ -109,7 +109,7 @@ public class DrainToFails {
             equal(new PDelay(0), q2.poll());
             equal(new PDelay(1), q2.poll());
             check(q2.isEmpty());
-            for (int i = SMALL; i < CAPACITY; i++)
+            for (int i = SMALL; i < MEM_COPY_CAPACITY; i++)
                 equal(new PDelay(i), q.poll());
             equal(0, q.size());
         }
@@ -117,7 +117,7 @@ public class DrainToFails {
 
     void testUnbounded(final BlockingQueue q) throws Throwable {
         System.err.println(q.getClass().getSimpleName());
-        for (int i = 0; i < CAPACITY; i++)
+        for (int i = 0; i < MEM_COPY_CAPACITY; i++)
             q.add(i);
         ArrayBlockingQueue q2 = new ArrayBlockingQueue(SMALL);
         try {
@@ -126,7 +126,7 @@ public class DrainToFails {
         } catch (IllegalStateException success) {
             assertContentsInOrder(q2, 0, 1);
             q2.clear();
-            equal(q.size(), CAPACITY - SMALL);
+            equal(q.size(), MEM_COPY_CAPACITY - SMALL);
             equal(SMALL, q.peek());
         }
 
@@ -135,8 +135,8 @@ public class DrainToFails {
             fail("should throw");
         } catch (IllegalStateException success) {
             assertContentsInOrder(q2, 2, 3);
-            equal(q.size(), CAPACITY - 2 * SMALL);
-            for (int i = 2 * SMALL; i < CAPACITY; i++)
+            equal(q.size(), MEM_COPY_CAPACITY - 2 * SMALL);
+            for (int i = 2 * SMALL; i < MEM_COPY_CAPACITY; i++)
                 equal(i, q.poll());
             equal(0, q.size());
         }
@@ -144,7 +144,7 @@ public class DrainToFails {
 
     void testBounded(final BlockingQueue q) throws Throwable {
         System.err.println(q.getClass().getSimpleName());
-        for (int i = 0; i < CAPACITY; i++)
+        for (int i = 0; i < MEM_COPY_CAPACITY; i++)
             q.add(i);
         List<Thread> putters = new ArrayList<>();
         for (int i = 0; i < 4; i++) {
@@ -158,7 +158,7 @@ public class DrainToFails {
             q.drainTo(q2, 7);
             fail("should throw");
         } catch (IllegalStateException success) {
-            while (q.size() < CAPACITY)
+            while (q.size() < MEM_COPY_CAPACITY)
                 Thread.yield();
             assertContentsInOrder(q2, 0, 1);
             q2.clear();
@@ -173,7 +173,7 @@ public class DrainToFails {
                 check(! putter.isAlive());
             }
             assertContentsInOrder(q2, 2, 3);
-            for (int i = 2 * SMALL; i < CAPACITY; i++)
+            for (int i = 2 * SMALL; i < MEM_COPY_CAPACITY; i++)
                 equal(i, q.poll());
             equal(4, q.size());
             check(q.contains(42));

@@ -40,7 +40,7 @@ public class DirectBufferAllocTest {
     static final int RUN_TIME_SECONDS = 5;
     static final int MIN_THREADS = 4;
     static final int MAX_THREADS = 64;
-    static final int CAPACITY = 1024 * 1024; // bytes
+    static final int MEM_COPY_CAPACITY = 1024 * 1024; // bytes
 
     /**
      * This test spawns multiple threads that constantly allocate direct
@@ -70,7 +70,7 @@ public class DirectBufferAllocTest {
             ),
             MIN_THREADS
         );
-        int capacity = CAPACITY;
+        int capacity = MEM_COPY_CAPACITY;
         int printBatchSize = 0;
 
         // override with command line arguments

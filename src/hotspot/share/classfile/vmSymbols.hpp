@@ -759,6 +759,19 @@
   do_signature(float3_float_signature,    "(FFF)F")                                                                     \
   do_signature(int2_int_signature,        "(II)I")                                                                      \
   do_signature(long2_long_signature,      "(JJ)J")                                                                      \
+  do_signature(obj_int_obj_int_bool_signature,  "([Ljava/lang/Object;I[Ljava/lang/Object;I)Z")                          \
+  do_signature(obj_vo_signature,          "([Ljava/lang/Object;)V")                                                     \
+  do_signature(obj_int_signature,         "([Ljava/lang/Object;)I")                                                     \
+  do_signature(obj_int_vo_signature,      "([Ljava/lang/Object;I)V")                                                    \
+                                                                                                                        \
+  do_intrinsic(_hash_put,                 java_lang_Object,       hash_put_name, obj_int_obj_int_bool_signature,  F_R)  \
+   do_name(     hash_put_name,                                   "hash_put")                                            \
+  do_intrinsic(_hash_memory_array_get,    java_lang_Object,       hash_memory_array_get_name, obj_vo_signature,   F_R)  \
+   do_name(     hash_memory_array_get_name,                      "hash_memory_array_get")                               \
+  do_intrinsic(_hash_memory_starting_pos_get, java_lang_Object,   hash_memory_starting_pos_get_name, obj_int_signature, F_R)  \
+   do_name(     hash_memory_starting_pos_get_name,               "hash_memory_starting_pos_get")                                            \
+  do_intrinsic(_hash_operator_get,        java_lang_Object,       hash_operator_get_name, obj_int_vo_signature,   F_R)  \
+   do_name(     hash_operator_get_name,                          "hash_operator_get")                                   \
                                                                                                                         \
   /* here are the math names, all together: */                                                                          \
   do_name(abs_name,"abs")       do_name(sin_name,"sin")         do_name(cos_name,"cos")                                 \
