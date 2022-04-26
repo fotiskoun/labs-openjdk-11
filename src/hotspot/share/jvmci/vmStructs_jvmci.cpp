@@ -687,6 +687,7 @@
   declare_function(JVMCIRuntime::object_notifyAll) \
   declare_function(JVMCIRuntime::object_hash_put) \
   declare_function(JVMCIRuntime::object_hash_memory_array_get) \
+  declare_function(JVMCIRuntime::object_hash_dupl_array_get) \
   declare_function(JVMCIRuntime::object_hash_memory_starting_pos_get) \
   declare_function(JVMCIRuntime::object_hash_operator_get) \
   declare_function(JVMCIRuntime::throw_and_post_jvmti_exception) \

@@ -48,6 +48,7 @@
 
 #define MEM_COPY_CAPACITY 50000 // Size of the Hash Table
 #define OPERATOR_CAPACITY 50000 // Size of the Hash Table
+#define DUPL_CAPACITY 1000 // Size of the Hash Table
 #define QUEUESIZE  10
 
 // Simple helper to see if the caller of a runtime stub which
@@ -447,11 +448,14 @@ long hash_function(typeArrayOopDesc *key, jint startingPosition) {
   const int nblocks = len / 4;
   uint32_t *blocks = 0;
   int capacityMod = 0;
-  if(startingPosition> -1){
-    capacityMod = MEM_COPY_CAPACITY;
-    blocks = (uint32_t *) key + startingPosition;
-  } else {
+  if(startingPosition > -1){
     capacityMod = OPERATOR_CAPACITY;
+    blocks = (uint32_t *) key + startingPosition;
+  } else if (startingPosition == -2){
+    capacityMod = DUPL_CAPACITY;
+    blocks = (uint32_t *) key;
+  } else {
+    capacityMod = MEM_COPY_CAPACITY;
     blocks = (uint32_t *) key;
   }
   int i;
@@ -492,10 +496,16 @@ long hash_function(typeArrayOopDesc *key, jint startingPosition) {
 }
 
 typedef struct Ht_item Ht_item;
+typedef struct Ht_dupl_item Ht__dupl_item; // the item with only two array pointers for the duplicate map
 
 struct Ht_item {
     typeArrayOopDesc *key;
     int startingPosition;
+    typeArrayOopDesc *value;
+};
+
+struct Ht_dupl_item {
+    typeArrayOopDesc *key;
     typeArrayOopDesc *value;
 };
 
@@ -517,6 +527,16 @@ Ht_item *create_item(typeArrayOopDesc *key, int startingPosition, typeArrayOopDe
 
   item->key = key;
   item->startingPosition = startingPosition;
+  item->value = value;
+
+  return item;
+}
+
+Ht_item *create_dupl_item(typeArrayOopDesc *key, typeArrayOopDesc *value) {
+  // Creates a pointer to a new duplicate table item
+  Ht_item *item = (Ht_item *) malloc(sizeof(Ht_item));
+
+  item->key = key;
   item->value = value;
 
   return item;
@@ -663,6 +683,59 @@ bool ht_insert_operator_map(HashTable *table, typeArrayOopDesc *key, jint starti
 }
 
 
+void handle_dupl_collision(HashTable *table, Ht_item *item, int index) {
+  for (int i = 1; i < DUPL_CAPACITY; i++) {
+    Ht_item *current_item = table->items[(index + i) % DUPL_CAPACITY];
+    if (current_item == NULL) {
+      table->items[(index + i) % DUPL_CAPACITY] = item;
+      table->count++;
+//      printf("new addition from collision %p \n", table->items[(index + i) % MEM_COPY_CAPACITY]->key);
+      return;
+    } else if (item->key == current_item->key) {
+//      printf("value update in the collision %p %p %p %p\n", current_item->key, current_item->value, key, value);
+      table->items[(index + i) % DUPL_CAPACITY]->value = item->value;
+      return;
+    }
+  }
+  printf("THE DUPL COLLISION COULD NOT BE RESOLVED");
+}
+
+bool ht_insert_dupl_map(HashTable *table, typeArrayOopDesc *key, typeArrayOopDesc *value) {
+  // Create the item
+  Ht_item *item = create_dupl_item(key, value);
+
+  // Compute the index
+  int index = hash_function(key, -2);
+
+  Ht_item *current_item = table->items[index];
+  if (current_item == NULL) {
+    // Key does not exist.
+    if (table->count == table->size) {
+      // Hash Table Full
+      printf("INSERT ERROR: Duplicate Table is full\n");
+      free_item(item);
+      return false;
+    }
+    // Insert directly
+    table->items[index] = item;
+    table->count++;
+    return true;
+  } else {
+    // Scenario 1: We only need to update value
+    if (key == current_item->key) {
+//      printf("Value updated %p %p %p %p \n", current_item->key, current_item->value, key, value);
+      table->items[index]->value = value;
+      return true;
+    }
+    else {
+      // Scenario 2: Collision
+      handle_mem_collision(table, item, index);
+      return true;
+    }
+  }
+}
+
+
 typeArrayOopDesc *ht_search_mem_array(HashTable *table, typeArrayOopDesc *key) {
   // Searches the key in the hashtable
   // and returns NULL if it doesn't exist
@@ -678,6 +751,36 @@ typeArrayOopDesc *ht_search_mem_array(HashTable *table, typeArrayOopDesc *key) {
       //CHECK FOR COLLISIONS
       for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
         Ht_item *collisionItem = table->items[(index + i) % MEM_COPY_CAPACITY];
+        if (collisionItem != NULL) {
+          if (collisionItem->key == key) {
+            return collisionItem->value;
+          }
+        } else {
+          //The item is not here
+          return NULL;
+        }
+      }
+    }
+  }
+  return NULL;
+}
+
+
+typeArrayOopDesc *ht_search_dupl_array(HashTable *table, typeArrayOopDesc *key) {
+  // Searches the key in the hashtable
+  // and returns NULL if it doesn't exist
+  int index = hash_function(key, -2);
+  Ht_item *item = table->items[index];
+
+
+  // Ensure that we move to a non NULL item
+  if (item != NULL) {
+    if (item->key == key) {
+      return item->value;
+    } else {
+      //CHECK FOR COLLISIONS
+      for (int i = 1; i < DUPL_CAPACITY; i++) {
+        Ht_item *collisionItem = table->items[(index + i) % DUPL_CAPACITY];
         if (collisionItem != NULL) {
           if (collisionItem->key == key) {
             return collisionItem->value;
@@ -753,17 +856,24 @@ typeArrayOopDesc *ht_search_operator_array(HashTable *table, typeArrayOopDesc *k
 
 HashTable *htMemCopy = create_table(MEM_COPY_CAPACITY);
 HashTable *htOperator = create_table(OPERATOR_CAPACITY);
+HashTable *htDuplicate = create_table(DUPL_CAPACITY);
 
 // Object.hash_put() to add items in map, with 0 add to memcopy map and with 1 in operator
 JRT_LEAF(jboolean,
          JVMCIRuntime::object_hash_put(JavaThread * thread, typeArrayOopDesc* ar1, jint startingPosition, typeArrayOopDesc* ar2, jint checkMap))
-
   if(checkMap == 0){ //inserting in mem map
-//    printf("I start put in memory pointer1 %p pointer2 %p\n", ar1, ar2);
+    printf("I start put in memory pointer1 %p pointer2 %p and pos %d\n", ar1, ar2, startingPosition);
     return ht_insert_mem_map(htMemCopy, ar1, startingPosition, ar2);
   } else if (checkMap == 1){ //inserting in operator map
-    printf("I start put in operator pointer1 %p pointer2 %p\n", ar1, ar2);
+    printf("I start put in operator pointer1 %p pointer2 %p and pos %d\n", ar1, ar2, startingPosition);
     return ht_insert_operator_map(htOperator, ar1, startingPosition, ar2);
+  } else if (checkMap == 2){ //inserting in duplicate map
+    printf("insert memory from buffer pointer1 %p pointer2 %p and pos %d\n", ar1, ar2, startingPosition);
+    return ht_insert_dupl_map(htDuplicate, ar1, ar2);
+  } else if (checkMap == 3){ //inserting in operator map
+    // TODO: just for inserting purposes
+    printf("insert memory from buffer pointer1 %p pointer2 %p and pos %d\n", ar1, ar2, startingPosition);
+    return ht_insert_mem_map(htMemCopy, ar1, startingPosition, ar2);
   }
   printf("checkMap value was not recognised");
   return false;
@@ -773,7 +883,17 @@ JRT_END
 // Object.hash_memory_array_get() fast path, caller does slow path
 JRT_LEAF(void , JVMCIRuntime::object_hash_memory_array_get(JavaThread* thread, typeArrayOopDesc* ar1))
   typeArrayOopDesc* valueArray = ht_search_mem_array(htMemCopy, ar1);
-  printf("while I get memory with pointer %p and take pointer %p  and don'tcare about given pointer %p", ar1, valueArray, ar1);
+  printf("while I get memory with pointer %p and take pointer %p ", ar1, valueArray);
+
+  thread-> set_vm_result(valueArray);
+//  printf("after I get memory");
+
+JRT_END
+
+// Object.hash_dupl_array_get() fast path, caller does slow path
+JRT_LEAF(void , JVMCIRuntime::object_hash_dupl_array_get(JavaThread* thread, typeArrayOopDesc* ar1))
+  typeArrayOopDesc* valueArray = ht_search_dupl_array(htDuplicate, ar1);
+  printf("while I get memory with pointer %p and take pointer %p ", ar1, valueArray);
 
   thread-> set_vm_result(valueArray);
 //  printf("after I get memory");
@@ -782,10 +902,9 @@ JRT_END
 
 // Object.hash_memory_starting_pos_get() fast path, caller does slow path
 JRT_LEAF(jint , JVMCIRuntime::object_hash_memory_starting_pos_get(JavaThread * thread, typeArrayOopDesc * ar1))
-
-  return ht_search_mem_starting_pos(htMemCopy, ar1);
-//  printf("This is the get %p %p\n", ar1, valueArray);
-
+  jint startPos = ht_search_mem_starting_pos(htMemCopy, ar1);
+  printf("This is the starting pos get %p %d\n", ar1,startPos);
+  return startPos;
 
 JRT_END
 
@@ -793,7 +912,9 @@ JRT_END
 JRT_LEAF(void , JVMCIRuntime::object_hash_operator_get(JavaThread * thread, typeArrayOopDesc * ar1, jint startingPos))
 //printf("operator get before");
   typeArrayOopDesc* valueArray = ht_search_operator_array(htOperator, ar1, startingPos);
-//  printf("This is the get %p %p\n", ar1, valueArray);
+//  if (valueArray) {
+    printf("This is the operator get %p %p and pos %d\n", ar1, valueArray, startingPos);
+//  }
 //  printf("operator get meanwhile");
 
   thread-> set_vm_result(valueArray);

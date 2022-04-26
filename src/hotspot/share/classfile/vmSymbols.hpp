@@ -768,8 +768,10 @@
    do_name(     hash_put_name,                                   "hash_put")                                            \
   do_intrinsic(_hash_memory_array_get,    java_lang_Object,       hash_memory_array_get_name, obj_vo_signature,   F_R)  \
    do_name(     hash_memory_array_get_name,                      "hash_memory_array_get")                               \
+  do_intrinsic(_hash_dupl_array_get,      java_lang_Object,       hash_dupl_array_get_name, obj_vo_signature,   F_R)    \
+   do_name(     hash_dupl_array_get_name,                        "hash_dupl_array_get")                                 \
   do_intrinsic(_hash_memory_starting_pos_get, java_lang_Object,   hash_memory_starting_pos_get_name, obj_int_signature, F_R)  \
-   do_name(     hash_memory_starting_pos_get_name,               "hash_memory_starting_pos_get")                                            \
+   do_name(     hash_memory_starting_pos_get_name,               "hash_memory_starting_pos_get")                        \
   do_intrinsic(_hash_operator_get,        java_lang_Object,       hash_operator_get_name, obj_int_vo_signature,   F_R)  \
    do_name(     hash_operator_get_name,                          "hash_operator_get")                                   \
                                                                                                                         \
