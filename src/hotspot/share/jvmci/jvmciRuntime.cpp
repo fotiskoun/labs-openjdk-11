@@ -495,10 +495,18 @@ long hash_function(typeArrayOopDesc *key, jint startingPosition) {
   return hash % capacityMod;
 }
 
-typedef struct Ht_item Ht_item;
-typedef struct Ht_dupl_item Ht__dupl_item; // the item with only two array pointers for the duplicate map
+typedef struct Ht_mem_item Ht_mem_item;
+typedef struct Ht_op_item Ht_op_item;
+typedef struct Ht_dupl_item Ht_dupl_item; // the item with only two array pointers for the duplicate map
 
-struct Ht_item {
+struct Ht_op_item {
+    typeArrayOopDesc *key;
+    int startingPosition;
+    typeArrayOopDesc *value;
+    typeArrayOopDesc *lengthsArray;
+};
+
+struct Ht_mem_item {
     typeArrayOopDesc *key;
     int startingPosition;
     typeArrayOopDesc *value;
@@ -509,21 +517,41 @@ struct Ht_dupl_item {
     typeArrayOopDesc *value;
 };
 
-typedef struct HashTable HashTable;
+typedef struct HashMemTable HashMemTable;
+typedef struct HashOpTable HashOpTable;
+typedef struct HashDuplTable HashDuplTable;
 
 // Define the Hash Table here
-struct HashTable {
+struct HashMemTable {
     // Contains an array of pointers
     // to items
-    Ht_item **items;
+    Ht_mem_item **items;
+    int size;
+    int count;
+};
+
+// Define the Hash Table here
+struct HashOpTable {
+    // Contains an array of pointers
+    // to items
+    Ht_op_item **items;
+    int size;
+    int count;
+};
+
+// Define the Hash Table here
+struct HashDuplTable {
+    // Contains an array of pointers
+    // to items
+    Ht_dupl_item **items;
     int size;
     int count;
 };
 
 
-Ht_item *create_item(typeArrayOopDesc *key, int startingPosition, typeArrayOopDesc *value) {
+Ht_mem_item *create_mem_item(typeArrayOopDesc *key, int startingPosition, typeArrayOopDesc *value) {
   // Creates a pointer to a new hash table item
-  Ht_item *item = (Ht_item *) malloc(sizeof(Ht_item));
+  Ht_mem_item *item = (Ht_mem_item *) malloc(sizeof(Ht_mem_item));
 
   item->key = key;
   item->startingPosition = startingPosition;
@@ -532,9 +560,21 @@ Ht_item *create_item(typeArrayOopDesc *key, int startingPosition, typeArrayOopDe
   return item;
 }
 
-Ht_item *create_dupl_item(typeArrayOopDesc *key, typeArrayOopDesc *value) {
+Ht_op_item *create_op_item(typeArrayOopDesc *key, int startingPosition, typeArrayOopDesc *value, typeArrayOopDesc *lengths) {
+  // Creates a pointer to a new hash table item
+  Ht_op_item *item = (Ht_op_item *) malloc(sizeof(Ht_op_item));
+
+  item->key = key;
+  item->startingPosition = startingPosition;
+  item->value = value;
+  item->lengthsArray = lengths;
+
+  return item;
+}
+
+Ht_dupl_item *create_dupl_item(typeArrayOopDesc *key, typeArrayOopDesc *value) {
   // Creates a pointer to a new duplicate table item
-  Ht_item *item = (Ht_item *) malloc(sizeof(Ht_item));
+  Ht_dupl_item *item = (Ht_dupl_item *) malloc(sizeof(Ht_dupl_item));
 
   item->key = key;
   item->value = value;
@@ -542,40 +582,103 @@ Ht_item *create_dupl_item(typeArrayOopDesc *key, typeArrayOopDesc *value) {
   return item;
 }
 
-HashTable *create_table(int size) {
+HashMemTable *create_mem_table(int size) {
   // Creates a new HashTable
-  HashTable *table = (HashTable *) malloc(sizeof(HashTable));
+  HashMemTable *table = (HashMemTable *) malloc(sizeof(HashMemTable));
   table->size = size;
   table->count = 0;
-  table->items = (Ht_item **) calloc(table->size, sizeof(Ht_item *));
+  table->items = (Ht_mem_item **) calloc(table->size, sizeof(Ht_mem_item *));
   for (int i = 0; i < table->size; i++)
     table->items[i] = NULL;
 
   return table;
 }
 
-void free_item(Ht_item *item) {
+HashOpTable *create_op_table(int size) {
+  // Creates a new HashTable
+  HashOpTable *table = (HashOpTable *) malloc(sizeof(HashOpTable));
+  table->size = size;
+  table->count = 0;
+  table->items = (Ht_op_item **) calloc(table->size, sizeof(Ht_op_item *));
+  for (int i = 0; i < table->size; i++)
+    table->items[i] = NULL;
+
+  return table;
+}
+
+HashDuplTable *create_dupl_table(int size) {
+  // Creates a new HashTable
+  HashDuplTable *table = (HashDuplTable *) malloc(sizeof(HashDuplTable));
+  table->size = size;
+  table->count = 0;
+  table->items = (Ht_dupl_item **) calloc(table->size, sizeof(Ht_dupl_item *));
+  for (int i = 0; i < table->size; i++)
+    table->items[i] = NULL;
+
+  return table;
+}
+
+void free_mem_item(Ht_mem_item *item) {
   // Frees an item
   free(item->key);
   free(item->value);
   free(item);
 }
 
-void free_table(HashTable *table) {
+void free_op_item(Ht_op_item *item) {
+  // Frees an item
+  free(item->key);
+  free(item->value);
+  free(item->lengthsArray);
+  free(item);
+}
+
+void free_dupl_item(Ht_dupl_item *item) {
+  // Frees an item
+  free(item->key);
+  free(item->value);
+  free(item);
+}
+
+void free_mem_table(HashMemTable *table) {
   // Frees the table
   for (int i = 0; i < table->size; i++) {
-    Ht_item *item = table->items[i];
+    Ht_mem_item *item = table->items[i];
     if (item != NULL)
-      free_item(item);
+      free_mem_item(item);
   }
 
   free(table->items);
   free(table);
 }
 
-void handle_mem_collision(HashTable *table, Ht_item *item, int index) {
+void free_op_table(HashOpTable *table) {
+  // Frees the table
+  for (int i = 0; i < table->size; i++) {
+    Ht_op_item *item = table->items[i];
+    if (item != NULL)
+      free_op_item(item);
+  }
+
+  free(table->items);
+  free(table);
+}
+
+void free_dupl_table(HashDuplTable *table) {
+  // Frees the table
+  for (int i = 0; i < table->size; i++) {
+    Ht_dupl_item *item = table->items[i];
+    if (item != NULL)
+      free_dupl_item(item);
+  }
+
+  free(table->items);
+  free(table);
+}
+
+void handle_mem_collision(HashMemTable *table, Ht_mem_item *item, int index) {
   for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
-    Ht_item *current_item = table->items[(index + i) % MEM_COPY_CAPACITY];
+    Ht_mem_item *current_item = table->items[(index + i) % MEM_COPY_CAPACITY];
     if (current_item == NULL) {
       table->items[(index + i) % MEM_COPY_CAPACITY] = item;
       table->count++;
@@ -591,31 +694,29 @@ void handle_mem_collision(HashTable *table, Ht_item *item, int index) {
   printf("THE COLLISION COULD NOT BE RESOLVED");
 }
 
-bool ht_insert_mem_map(HashTable *table, typeArrayOopDesc *key, jint startingPosition, typeArrayOopDesc *value) {
+bool ht_insert_mem_map(HashMemTable *table, typeArrayOopDesc *key, jint startingPosition, typeArrayOopDesc *value) {
   // Create the item
-  Ht_item *item = create_item(key, startingPosition, value);
+  Ht_mem_item *item = create_mem_item(key, startingPosition, value);
 
   // Compute the index
   int index = hash_function(key, -1);
 
-  Ht_item *current_item = table->items[index];
+  Ht_mem_item *current_item = table->items[index];
   if (current_item == NULL) {
     // Key does not exist.
     if (table->count == table->size) {
       // Hash Table Full
       printf("INSERT ERROR: Hash Table is full\n");
-      free_item(item);
+      free_mem_item(item);
       return false;
     }
     // Insert directly
     table->items[index] = item;
     table->count++;
-//    printf("new simple addition\n");
     return true;
   } else {
     // Scenario 1: We only need to update value
     if (key == current_item->key) {
-//      printf("Value updated %p %p %p %p \n", current_item->key, current_item->value, key, value);
       table->items[index]->value = value;
       table->items[index]->startingPosition = startingPosition;
       return true;
@@ -628,9 +729,9 @@ bool ht_insert_mem_map(HashTable *table, typeArrayOopDesc *key, jint startingPos
   }
 }
 
-void handle_operator_collision(HashTable *table, Ht_item *item, int index) {
+void handle_operator_collision(HashOpTable *table, Ht_op_item *item, int index) {
   for (int i = 1; i < OPERATOR_CAPACITY; i++) {
-    Ht_item *current_item = table->items[(index + i) % OPERATOR_CAPACITY];
+    Ht_op_item *current_item = table->items[(index + i) % OPERATOR_CAPACITY];
     if (current_item == NULL) {
       table->items[(index + i) % OPERATOR_CAPACITY] = item;
       table->count++;
@@ -639,6 +740,7 @@ void handle_operator_collision(HashTable *table, Ht_item *item, int index) {
     } else if (item->key == current_item->key && item->startingPosition == current_item->startingPosition) {
 //      printf("value update in the collision %p %p %p %p\n", current_item->key, current_item->value, key, value);
       table->items[(index + i) % OPERATOR_CAPACITY]->value = item->value;
+      table->items[(index + i) % OPERATOR_CAPACITY]->lengthsArray = item->lengthsArray;
       return;
     }
   }
@@ -646,20 +748,21 @@ void handle_operator_collision(HashTable *table, Ht_item *item, int index) {
 }
 
 
-bool ht_insert_operator_map(HashTable *table, typeArrayOopDesc *key, jint startingPosition, typeArrayOopDesc *value) {
+bool ht_insert_operator_map(HashOpTable *table, typeArrayOopDesc *key, jint startingPosition, typeArrayOopDesc *value,
+                            typeArrayOopDesc *lengthsAr) {
   // Create the item
-  Ht_item *item = create_item(key, startingPosition, value);
+  Ht_op_item *item = create_op_item(key, startingPosition, value, lengthsAr);
 
   // Compute the index
   int index = hash_function(key, startingPosition);
 
-  Ht_item *current_item = table->items[index];
+  Ht_op_item *current_item = table->items[index];
   if (current_item == NULL) {
     // Key does not exist.
     if (table->count == table->size) {
       // Hash Table Full
       printf("INSERT ERROR: Hash Table is full\n");
-      free_item(item);
+      free_op_item(item);
       return false;
     }
     // Insert directly
@@ -672,6 +775,7 @@ bool ht_insert_operator_map(HashTable *table, typeArrayOopDesc *key, jint starti
     if (key == current_item->key && startingPosition == current_item->startingPosition) {
 //      printf("Value updated %p %p %p %p \n", current_item->key, current_item->value, key, value);
       table->items[index]->value = value;
+      table->items[index]->lengthsArray = lengthsAr;
       return true;
     }
     else {
@@ -683,9 +787,9 @@ bool ht_insert_operator_map(HashTable *table, typeArrayOopDesc *key, jint starti
 }
 
 
-void handle_dupl_collision(HashTable *table, Ht_item *item, int index) {
+void handle_dupl_collision(HashDuplTable *table, Ht_dupl_item *item, int index) {
   for (int i = 1; i < DUPL_CAPACITY; i++) {
-    Ht_item *current_item = table->items[(index + i) % DUPL_CAPACITY];
+    Ht_dupl_item *current_item = table->items[(index + i) % DUPL_CAPACITY];
     if (current_item == NULL) {
       table->items[(index + i) % DUPL_CAPACITY] = item;
       table->count++;
@@ -700,20 +804,20 @@ void handle_dupl_collision(HashTable *table, Ht_item *item, int index) {
   printf("THE DUPL COLLISION COULD NOT BE RESOLVED");
 }
 
-bool ht_insert_dupl_map(HashTable *table, typeArrayOopDesc *key, typeArrayOopDesc *value) {
+bool ht_insert_dupl_map(HashDuplTable *table, typeArrayOopDesc *key, typeArrayOopDesc *value) {
   // Create the item
-  Ht_item *item = create_dupl_item(key, value);
+  Ht_dupl_item *item = create_dupl_item(key, value);
 
   // Compute the index
   int index = hash_function(key, -2);
 
-  Ht_item *current_item = table->items[index];
+  Ht_dupl_item *current_item = table->items[index];
   if (current_item == NULL) {
     // Key does not exist.
     if (table->count == table->size) {
       // Hash Table Full
       printf("INSERT ERROR: Duplicate Table is full\n");
-      free_item(item);
+      free_dupl_item(item);
       return false;
     }
     // Insert directly
@@ -729,18 +833,18 @@ bool ht_insert_dupl_map(HashTable *table, typeArrayOopDesc *key, typeArrayOopDes
     }
     else {
       // Scenario 2: Collision
-      handle_mem_collision(table, item, index);
+      handle_dupl_collision(table, item, index);
       return true;
     }
   }
 }
 
 
-typeArrayOopDesc *ht_search_mem_array(HashTable *table, typeArrayOopDesc *key) {
+typeArrayOopDesc *ht_search_mem_array(HashMemTable *table, typeArrayOopDesc *key) {
   // Searches the key in the hashtable
   // and returns NULL if it doesn't exist
   int index = hash_function(key, -1);
-  Ht_item *item = table->items[index];
+  Ht_mem_item *item = table->items[index];
 
 
   // Ensure that we move to a non NULL item
@@ -750,7 +854,7 @@ typeArrayOopDesc *ht_search_mem_array(HashTable *table, typeArrayOopDesc *key) {
     } else {
       //CHECK FOR COLLISIONS
       for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
-        Ht_item *collisionItem = table->items[(index + i) % MEM_COPY_CAPACITY];
+        Ht_mem_item *collisionItem = table->items[(index + i) % MEM_COPY_CAPACITY];
         if (collisionItem != NULL) {
           if (collisionItem->key == key) {
             return collisionItem->value;
@@ -765,12 +869,11 @@ typeArrayOopDesc *ht_search_mem_array(HashTable *table, typeArrayOopDesc *key) {
   return NULL;
 }
 
-
-typeArrayOopDesc *ht_search_dupl_array(HashTable *table, typeArrayOopDesc *key) {
+typeArrayOopDesc *ht_search_dupl_array(HashDuplTable *table, typeArrayOopDesc *key) {
   // Searches the key in the hashtable
   // and returns NULL if it doesn't exist
   int index = hash_function(key, -2);
-  Ht_item *item = table->items[index];
+  Ht_dupl_item *item = table->items[index];
 
 
   // Ensure that we move to a non NULL item
@@ -780,7 +883,7 @@ typeArrayOopDesc *ht_search_dupl_array(HashTable *table, typeArrayOopDesc *key) 
     } else {
       //CHECK FOR COLLISIONS
       for (int i = 1; i < DUPL_CAPACITY; i++) {
-        Ht_item *collisionItem = table->items[(index + i) % DUPL_CAPACITY];
+        Ht_dupl_item *collisionItem = table->items[(index + i) % DUPL_CAPACITY];
         if (collisionItem != NULL) {
           if (collisionItem->key == key) {
             return collisionItem->value;
@@ -795,11 +898,11 @@ typeArrayOopDesc *ht_search_dupl_array(HashTable *table, typeArrayOopDesc *key) 
   return NULL;
 }
 
-jint ht_search_mem_starting_pos(HashTable *table, typeArrayOopDesc *key) {
+jint ht_search_mem_starting_pos(HashMemTable *table, typeArrayOopDesc *key) {
   // Searches the key in the hashtable
   // and returns NULL if it doesn't exist
   int index = hash_function(key, -1);
-  Ht_item *item = table->items[index];
+  Ht_mem_item *item = table->items[index];
 
 
   // Ensure that we move to a non NULL item
@@ -809,7 +912,7 @@ jint ht_search_mem_starting_pos(HashTable *table, typeArrayOopDesc *key) {
     } else {
       //CHECK FOR COLLISIONS
       for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
-        Ht_item *collisionItem = table->items[(index + i) % MEM_COPY_CAPACITY];
+        Ht_mem_item *collisionItem = table->items[(index + i) % MEM_COPY_CAPACITY];
         if (collisionItem != NULL) {
           if (collisionItem->key == key) {
             return collisionItem->startingPosition;
@@ -824,11 +927,11 @@ jint ht_search_mem_starting_pos(HashTable *table, typeArrayOopDesc *key) {
   return -1;
 }
 
-typeArrayOopDesc *ht_search_operator_array(HashTable *table, typeArrayOopDesc *key, jint startingPos) {
+typeArrayOopDesc *ht_search_operator_array(HashOpTable *table, typeArrayOopDesc *key, jint startingPos) {
   // Searches the key in the hashtable
   // and returns NULL if it doesn't exist
   int index = hash_function(key, startingPos);
-  Ht_item *item = table->items[index];
+  Ht_op_item *item = table->items[index];
 
 
   // Ensure that we move to a non NULL item
@@ -838,7 +941,7 @@ typeArrayOopDesc *ht_search_operator_array(HashTable *table, typeArrayOopDesc *k
     } else {
       //CHECK FOR COLLISIONS
       for (int i = 1; i < OPERATOR_CAPACITY; i++) {
-        Ht_item *collisionItem = table->items[(index + i) % OPERATOR_CAPACITY];
+        Ht_op_item *collisionItem = table->items[(index + i) % OPERATOR_CAPACITY];
         if (collisionItem != NULL) {
           if (collisionItem->key == key && collisionItem->startingPosition == startingPos) {
             return collisionItem->value;
@@ -854,26 +957,61 @@ typeArrayOopDesc *ht_search_operator_array(HashTable *table, typeArrayOopDesc *k
 }
 
 
-HashTable *htMemCopy = create_table(MEM_COPY_CAPACITY);
-HashTable *htOperator = create_table(OPERATOR_CAPACITY);
-HashTable *htDuplicate = create_table(DUPL_CAPACITY);
+typeArrayOopDesc *ht_search_operator_lengths_array(HashOpTable *table, typeArrayOopDesc *key, jint startingPos) {
+  // Searches the key in the hashtable
+  // and returns NULL if it doesn't exist
+  int index = hash_function(key, startingPos);
+  Ht_op_item *item = table->items[index];
+
+
+  // Ensure that we move to a non NULL item
+  if (item != NULL) {
+    if (item->key == key && item->startingPosition == startingPos) {
+      return item->lengthsArray;
+    } else {
+      //CHECK FOR COLLISIONS
+      for (int i = 1; i < OPERATOR_CAPACITY; i++) {
+        Ht_op_item *collisionItem = table->items[(index + i) % OPERATOR_CAPACITY];
+        if (collisionItem != NULL) {
+          if (collisionItem->key == key && collisionItem->startingPosition == startingPos) {
+            return collisionItem->lengthsArray;
+          }
+        } else {
+          //The item is not here
+          return NULL;
+        }
+      }
+    }
+  }
+  return NULL;
+}
+
+
+HashMemTable *htMemCopy = create_mem_table(MEM_COPY_CAPACITY);
+HashOpTable *htOperator = create_op_table(OPERATOR_CAPACITY);
+HashDuplTable *htDuplicate = create_dupl_table(DUPL_CAPACITY);
 
 // Object.hash_put() to add items in map, with 0 add to memcopy map and with 1 in operator
 JRT_LEAF(jboolean,
-         JVMCIRuntime::object_hash_put(JavaThread * thread, typeArrayOopDesc* ar1, jint startingPosition, typeArrayOopDesc* ar2, jint checkMap))
+         JVMCIRuntime::object_hash_put(JavaThread * thread, typeArrayOopDesc* ar1, jint startingPosition,
+                                       typeArrayOopDesc* ar2, typeArrayOopDesc* lengthsArray,  jint checkMap))
   if(checkMap == 0){ //inserting in mem map
     printf("I start put in memory pointer1 %p pointer2 %p and pos %d\n", ar1, ar2, startingPosition);
     return ht_insert_mem_map(htMemCopy, ar1, startingPosition, ar2);
   } else if (checkMap == 1){ //inserting in operator map
-    printf("I start put in operator pointer1 %p pointer2 %p and pos %d\n", ar1, ar2, startingPosition);
-    return ht_insert_operator_map(htOperator, ar1, startingPosition, ar2);
+    printf("I start put in operator pointer1 %p pointer2 %p length pointer %p and pos %d\n", ar1, ar2, lengthsArray, startingPosition);
+    if (!lengthsArray){
+      printf("lengthsArray is empty pointer: %p\n", lengthsArray);
+      return false;
+    }
+    return ht_insert_operator_map(htOperator, ar1, startingPosition, ar2, lengthsArray);
   } else if (checkMap == 2){ //inserting in duplicate map
-    printf("insert memory from buffer pointer1 %p pointer2 %p and pos %d\n", ar1, ar2, startingPosition);
+    printf("insert duplicate map pointer1 %p pointer2 %p and pos %d\n", ar1, ar2, startingPosition);
     return ht_insert_dupl_map(htDuplicate, ar1, ar2);
   } else if (checkMap == 3){ //inserting in operator map
     // TODO: just for inserting purposes
     printf("insert memory from buffer pointer1 %p pointer2 %p and pos %d\n", ar1, ar2, startingPosition);
-    return ht_insert_mem_map(htMemCopy, ar1, startingPosition, ar2);
+    return false;
   }
   printf("checkMap value was not recognised");
   return false;
@@ -893,7 +1031,7 @@ JRT_END
 // Object.hash_dupl_array_get() fast path, caller does slow path
 JRT_LEAF(void , JVMCIRuntime::object_hash_dupl_array_get(JavaThread* thread, typeArrayOopDesc* ar1))
   typeArrayOopDesc* valueArray = ht_search_dupl_array(htDuplicate, ar1);
-  printf("while I get memory with pointer %p and take pointer %p ", ar1, valueArray);
+  printf("I get dupl with pointer %p and take pointer %p ", ar1, valueArray);
 
   thread-> set_vm_result(valueArray);
 //  printf("after I get memory");
@@ -913,7 +1051,21 @@ JRT_LEAF(void , JVMCIRuntime::object_hash_operator_get(JavaThread * thread, type
 //printf("operator get before");
   typeArrayOopDesc* valueArray = ht_search_operator_array(htOperator, ar1, startingPos);
 //  if (valueArray) {
-    printf("This is the operator get %p %p and pos %d\n", ar1, valueArray, startingPos);
+    printf("This is the operator runs get %p %p and pos %d\n", ar1, valueArray, startingPos);
+//  }
+//  printf("operator get meanwhile");
+
+  thread-> set_vm_result(valueArray);
+//  printf("operator get after");
+
+JRT_END
+
+// Object.hash_operator_get() fast path, caller does slow path
+JRT_LEAF(void , JVMCIRuntime::object_hash_operator_lengths_get(JavaThread * thread, typeArrayOopDesc * ar1, jint startingPos))
+//printf("operator get before");
+  typeArrayOopDesc* valueArray = ht_search_operator_lengths_array(htOperator, ar1, startingPos);
+//  if (valueArray) {
+  printf("This is the operator lengths get %p %p and pos %d\n", ar1, valueArray, startingPos);
 //  }
 //  printf("operator get meanwhile");
 

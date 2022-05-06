@@ -316,6 +316,7 @@ public class Object {
      * @param   ar1   the first array reference.
      * @param   startingPosition   the integer for the starting position.
      * @param   ar2   the second array reference.
+     * @param   lengths   the second array reference.
      * @param   checkMap   the integer to determine the map.
      * @return  {@code true} if this object is the same as the obj
      * @see    #notify()
@@ -324,7 +325,7 @@ public class Object {
      * @see    #wait(long, int)
      */
     @HotSpotIntrinsicCandidate
-    public final native boolean hash_put(Object[] ar1, int startingPosition, Object[] ar2, int checkMap);
+    public final native boolean hash_put(Object[] ar1, int startingPosition, Object[] ar2, Object[] lengths, int checkMap);
 
     /**
      * Causes the current thread to wait until it is awakened, typically
@@ -338,6 +339,20 @@ public class Object {
      */
     @HotSpotIntrinsicCandidate
     public final native void hash_memory_array_get(Object[] ar1);
+
+    /**
+     * Causes the current thread to wait until it is awakened, typically
+     * by being <em>notified</em> or <em>interrupted</em>.
+     * <p>
+     * In all respects, this method behaves as if {@code wait(0L, 0)}
+     * had been called. See the specification of the {@link #wait(long, int)} method
+     * for details.
+     * @param   ar1   the reference object with which to compare.
+     * @param   startingPosition   the integer for the starting position.
+     * @return  double array of the value
+     */
+    @HotSpotIntrinsicCandidate
+    public final native void hash_operator_lengths_get(Object[] ar1, int startingPosition);
 
     /**
      * Causes the current thread to wait until it is awakened, typically
