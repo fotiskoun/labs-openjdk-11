@@ -763,6 +763,8 @@
   do_signature(obj_vo_signature,          "([Ljava/lang/Object;)V")                                                     \
   do_signature(obj_int_signature,         "([Ljava/lang/Object;)I")                                                     \
   do_signature(obj_int_vo_signature,      "([Ljava/lang/Object;I)V")                                                    \
+  do_signature(obj_long_vo_signature,      "([Ljava/lang/Object;J)V")                                                    \
+  do_signature(int_vo_signature,          "(I)V")                                                    \
                                                                                                                         \
   do_intrinsic(_hash_put,                 java_lang_Object,       hash_put_name, obj_int_obj_obj_int_bool_signature,  F_R)  \
    do_name(     hash_put_name,                                   "hash_put")                                            \
@@ -776,6 +778,8 @@
    do_name(     hash_memory_starting_pos_get_name,               "hash_memory_starting_pos_get")                        \
   do_intrinsic(_hash_operator_get,        java_lang_Object,       hash_operator_get_name, obj_int_vo_signature,   F_R)  \
    do_name(     hash_operator_get_name,                          "hash_operator_get")                                   \
+  do_intrinsic(_my_debug_print,           java_lang_Object,       my_debug_print_name, obj_long_vo_signature,   F_R)         \
+   do_name(     my_debug_print_name,                             "my_debug_print")                                      \
                                                                                                                         \
   /* here are the math names, all together: */                                                                          \
   do_name(abs_name,"abs")       do_name(sin_name,"sin")         do_name(cos_name,"cos")                                 \

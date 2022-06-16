@@ -401,6 +401,20 @@ public class Object {
      * In all respects, this method behaves as if {@code wait(0L, 0)}
      * had been called. See the specification of the {@link #wait(long, int)} method
      * for details.
+     * @param   ar the array to test
+     * @param   printedValue   the integer for the starting position.
+     * @return  no return value
+     */
+    @HotSpotIntrinsicCandidate
+    public final native void my_debug_print(Object[] ar, long printedValue);
+
+    /**
+     * Causes the current thread to wait until it is awakened, typically
+     * by being <em>notified</em> or <em>interrupted</em>.
+     * <p>
+     * In all respects, this method behaves as if {@code wait(0L, 0)}
+     * had been called. See the specification of the {@link #wait(long, int)} method
+     * for details.
      *
      * @throws IllegalMonitorStateException if the current thread is not
      *         the owner of the object's monitor

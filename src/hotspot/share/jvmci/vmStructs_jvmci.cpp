@@ -691,6 +691,7 @@
   declare_function(JVMCIRuntime::object_hash_dupl_array_get) \
   declare_function(JVMCIRuntime::object_hash_memory_starting_pos_get) \
   declare_function(JVMCIRuntime::object_hash_operator_get) \
+  declare_function(JVMCIRuntime::object_my_debug_print) \
   declare_function(JVMCIRuntime::throw_and_post_jvmti_exception) \
   declare_function(JVMCIRuntime::throw_klass_external_name_exception) \
   declare_function(JVMCIRuntime::throw_class_cast_exception) \

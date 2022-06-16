@@ -397,6 +397,7 @@ class JVMCIRuntime: public CHeapObj<mtJVMCI> {
   static jint object_hash_memory_starting_pos_get(JavaThread* thread, typeArrayOopDesc* ar1);
   static void object_hash_operator_get(JavaThread* thread, typeArrayOopDesc* ar1, jint startingPos);
   static void object_hash_operator_lengths_get(JavaThread* thread, typeArrayOopDesc* ar1, jint startingPos);
+  static void object_my_debug_print(JavaThread* thread, typeArrayOopDesc* ar1, jlong printedValue);
   static void vm_error(JavaThread* thread, jlong where, jlong format, jlong value);
   static oopDesc* load_and_clear_exception(JavaThread* thread);
   static void log_printf(JavaThread* thread, const char* format, jlong v1, jlong v2, jlong v3);

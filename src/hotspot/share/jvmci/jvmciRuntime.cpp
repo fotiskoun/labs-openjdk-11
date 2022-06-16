@@ -1073,6 +1073,13 @@ JRT_LEAF(void , JVMCIRuntime::object_hash_operator_lengths_get(JavaThread * thre
 //  printf("operator get after");
 
 JRT_END
+int x=0;
+// Object.my_debug_print() fast path, caller does slow path
+JRT_LEAF(void , JVMCIRuntime::object_my_debug_print(JavaThread * thread, typeArrayOopDesc * ar1, jlong printedValue))
+  x = sizeof(htMemCopy);
+  printf("The value is %ld\n", printedValue);
+
+JRT_END
 
 
 JRT_BLOCK_ENTRY(int, JVMCIRuntime::throw_and_post_jvmti_exception(JavaThread* thread, const char* exception, const char* message))
