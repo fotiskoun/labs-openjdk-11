@@ -328,6 +328,20 @@ public class Object {
     public final native boolean hash_put(Object[] ar1, int startingPosition, Object[] ar2, Object[] lengths, int checkMap);
 
     /**
+     * It stores in the memory copies map an address with  an address and value
+     * @param   keyVector   the first vector reference address.
+     * @param   keyAddress   the first array address.
+     * @param   valueAddress   the value address.
+     * @param   startingPosition   the starting position.
+     * @param   addLong   decide to add the pointer ot the long as a key.
+     * @return  {@code true} if it correctly enters in map
+     */
+    @HotSpotIntrinsicCandidate
+    public final native boolean hash_memory_copies_put(Object[] keyVector, long keyAddress, long valueAddress, long startingPosition, int addLong);
+
+
+
+    /**
      * Causes the current thread to wait until it is awakened, typically
      * by being <em>notified</em> or <em>interrupted</em>.
      * <p>
@@ -340,6 +354,7 @@ public class Object {
     @HotSpotIntrinsicCandidate
     public final native void hash_memory_array_get(Object[] ar1);
 
+
     /**
      * Causes the current thread to wait until it is awakened, typically
      * by being <em>notified</em> or <em>interrupted</em>.
@@ -348,11 +363,36 @@ public class Object {
      * had been called. See the specification of the {@link #wait(long, int)} method
      * for details.
      * @param   ar1   the reference object with which to compare.
-     * @param   startingPosition   the integer for the starting position.
+     * @return  long value of the unique id address
+     */
+    @HotSpotIntrinsicCandidate
+    public final native long hash_memory_copies_array_get(Object ar1);
+
+    /**
+     * Causes the current thread to wait until it is awakened, typically
+     * by being <em>notified</em> or <em>interrupted</em>.
+     * <p>
+     * In all respects, this method behaves as if {@code wait(0L, 0)}
+     * had been called. See the specification of the {@link #wait(long, int)} method
+     * for details.
+     * @param   ar1   the reference object with which to compare.
+     * @return  long value of the starting position
+     */
+    @HotSpotIntrinsicCandidate
+    public final native long hash_memory_copies_starting_pos_get(Object ar1);
+
+    /**
+     * Causes the current thread to wait until it is awakened, typically
+     * by being <em>notified</em> or <em>interrupted</em>.
+     * <p>
+     * In all respects, this method behaves as if {@code wait(0L, 0)}
+     * had been called. See the specification of the {@link #wait(long, int)} method
+     * for details.
+     * @param   ar1   the reference object with which to compare.
      * @return  double array of the value
      */
     @HotSpotIntrinsicCandidate
-    public final native void hash_operator_lengths_get(Object[] ar1, int startingPosition);
+    public final native void hash_consumer_lengths_get(Object[] ar1);
 
     /**
      * Causes the current thread to wait until it is awakened, typically
@@ -388,11 +428,23 @@ public class Object {
      * had been called. See the specification of the {@link #wait(long, int)} method
      * for details.
      * @param   ar1   the reference object with which to compare.
-     * @param   startingPosition   the integer for the starting position.
      * @return  double array of the value
      */
     @HotSpotIntrinsicCandidate
-    public final native void hash_operator_get(Object[] ar1, int startingPosition);
+    public final native void hash_consumer_get(Object[] ar1);
+
+    /**
+     * Causes the current thread to wait until it is awakened, typically
+     * by being <em>notified</em> or <em>interrupted</em>.
+     * <p>
+     * In all respects, this method behaves as if {@code wait(0L, 0)}
+     * had been called. See the specification of the {@link #wait(long, int)} method
+     * for details.
+     * @param   ar1   the reference object with which to compare.
+     * @return  int length of the size of the compressed array
+     */
+    @HotSpotIntrinsicCandidate
+    public final native int hash_consumer_comp_array_length_get(Object[] ar1);
 
     /**
      * Causes the current thread to wait until it is awakened, typically

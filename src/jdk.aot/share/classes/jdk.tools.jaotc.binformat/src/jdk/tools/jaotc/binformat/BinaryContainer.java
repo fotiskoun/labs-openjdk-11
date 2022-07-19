@@ -238,6 +238,7 @@ public final class BinaryContainer implements SymbolTable {
         {"JVMCIRuntime::monitorexit", "_aot_jvmci_runtime_monitorexit"},
         {"JVMCIRuntime::object_notify", "_aot_object_notify"},
         {"JVMCIRuntime::object_notifyAll", "_aot_object_notifyAll"},
+        {"JVMCIRuntime::hash_memory_copies_array_get", "_aot_hash_memory_copies_array_get"},
         {"JVMCIRuntime::log_object", "_aot_jvmci_runtime_log_object"},
         {"JVMCIRuntime::log_printf", "_aot_jvmci_runtime_log_printf"},
         {"JVMCIRuntime::vm_message", "_aot_jvmci_runtime_vm_message"},

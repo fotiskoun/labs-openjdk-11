@@ -686,11 +686,15 @@
   declare_function(JVMCIRuntime::object_notify) \
   declare_function(JVMCIRuntime::object_notifyAll) \
   declare_function(JVMCIRuntime::object_hash_put) \
+  declare_function(JVMCIRuntime::object_hash_memory_copies_put) \
   declare_function(JVMCIRuntime::object_hash_memory_array_get) \
-  declare_function(JVMCIRuntime::object_hash_operator_lengths_get) \
+  declare_function(JVMCIRuntime::object_hash_memory_copies_array_get) \
+  declare_function(JVMCIRuntime::object_hash_memory_copies_starting_pos_get) \
+  declare_function(JVMCIRuntime::object_hash_consumer_lengths_get) \
   declare_function(JVMCIRuntime::object_hash_dupl_array_get) \
   declare_function(JVMCIRuntime::object_hash_memory_starting_pos_get) \
-  declare_function(JVMCIRuntime::object_hash_operator_get) \
+  declare_function(JVMCIRuntime::object_hash_consumer_get) \
+  declare_function(JVMCIRuntime::object_hash_consumer_comp_array_length_get) \
   declare_function(JVMCIRuntime::object_my_debug_print) \
   declare_function(JVMCIRuntime::throw_and_post_jvmti_exception) \
   declare_function(JVMCIRuntime::throw_klass_external_name_exception) \

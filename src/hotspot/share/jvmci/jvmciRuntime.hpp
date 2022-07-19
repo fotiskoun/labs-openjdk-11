@@ -21,6 +21,14 @@
  * questions.
  */
 
+#ifndef MY_GLOBALS_H
+#define MY_GLOBALS_H
+typedef struct HashMemoryCopiesTable HashMemoryCopiesTable;
+extern HashMemoryCopiesTable *htMemoryCopies;
+extern bool ht_insert_mem_copies_map(HashMemoryCopiesTable *table, long keyAddress, long valueAddress, long startingPosition);
+
+#endif
+
 #ifndef SHARE_VM_JVMCI_JVMCI_RUNTIME_HPP
 #define SHARE_VM_JVMCI_JVMCI_RUNTIME_HPP
 
@@ -392,11 +400,15 @@ class JVMCIRuntime: public CHeapObj<mtJVMCI> {
   static jboolean object_notify(JavaThread* thread, oopDesc* obj);
   static jboolean object_notifyAll(JavaThread* thread, oopDesc* obj);
   static jboolean object_hash_put(JavaThread* thread, typeArrayOopDesc* ar1, jint startingPosition, typeArrayOopDesc* ar2, typeArrayOopDesc* lengthsArray, jint checkMap);
+  static jboolean object_hash_memory_copies_put(JavaThread * thread, typeArrayOopDesc* keyVector, jlong keyAddress, jlong valueAddress, jlong startingPosition, jint addLong);
   static void object_hash_memory_array_get(JavaThread* thread, typeArrayOopDesc* ar1);
+  static jlong object_hash_memory_copies_array_get(JavaThread* thread, typeArrayOopDesc*  ar1);
+  static jlong object_hash_memory_copies_starting_pos_get(JavaThread* thread, typeArrayOopDesc* ar1);
   static void object_hash_dupl_array_get(JavaThread* thread, typeArrayOopDesc* ar1);
   static jint object_hash_memory_starting_pos_get(JavaThread* thread, typeArrayOopDesc* ar1);
-  static void object_hash_operator_get(JavaThread* thread, typeArrayOopDesc* ar1, jint startingPos);
-  static void object_hash_operator_lengths_get(JavaThread* thread, typeArrayOopDesc* ar1, jint startingPos);
+  static void object_hash_consumer_get(JavaThread* thread, typeArrayOopDesc* ar1);
+  static void object_hash_consumer_lengths_get(JavaThread* thread, typeArrayOopDesc* ar1);
+  static jint object_hash_consumer_comp_array_length_get(JavaThread* thread, typeArrayOopDesc* ar1);
   static void object_my_debug_print(JavaThread* thread, typeArrayOopDesc* ar1, jlong printedValue);
   static void vm_error(JavaThread* thread, jlong where, jlong format, jlong value);
   static oopDesc* load_and_clear_exception(JavaThread* thread);

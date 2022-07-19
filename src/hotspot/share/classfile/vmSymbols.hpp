@@ -763,22 +763,32 @@
   do_signature(obj_vo_signature,          "([Ljava/lang/Object;)V")                                                     \
   do_signature(obj_int_signature,         "([Ljava/lang/Object;)I")                                                     \
   do_signature(obj_int_vo_signature,      "([Ljava/lang/Object;I)V")                                                    \
-  do_signature(obj_long_vo_signature,      "([Ljava/lang/Object;J)V")                                                    \
-  do_signature(int_vo_signature,          "(I)V")                                                    \
+  do_signature(obj_long_vo_signature,     "([Ljava/lang/Object;J)V")                                                    \
+  do_signature(int_vo_signature,          "(I)V")                                                                       \
+  do_signature(obj_l_l_l_int_bool,        "([Ljava/lang/Object;JJJI)Z")                                                 \
+  do_signature(obj_l_signature,          "(Ljava/lang/Object;)J")                                                       \
                                                                                                                         \
-  do_intrinsic(_hash_put,                 java_lang_Object,       hash_put_name, obj_int_obj_obj_int_bool_signature,  F_R)  \
+  do_intrinsic(_hash_put,                 java_lang_Object,       hash_put_name, obj_int_obj_obj_int_bool_signature,    F_R) \
    do_name(     hash_put_name,                                   "hash_put")                                            \
+  do_intrinsic(_hash_memory_copies_put,   java_lang_Object,       hash_memory_copies_put_name, obj_l_l_l_int_bool,  F_R)\
+   do_name(     hash_memory_copies_put_name,                     "hash_memory_copies_put")                              \
   do_intrinsic(_hash_memory_array_get,    java_lang_Object,       hash_memory_array_get_name, obj_vo_signature,   F_R)  \
    do_name(     hash_memory_array_get_name,                      "hash_memory_array_get")                               \
-  do_intrinsic(_hash_operator_lengths_get, java_lang_Object,      hash_operator_lengths_get_name, obj_int_vo_signature,   F_R)  \
-   do_name(     hash_operator_lengths_get_name,                   "hash_operator_lengths_get")                          \
+  do_intrinsic(_hash_memory_copies_array_get, java_lang_Object,   hash_memory_copies_array_get_name, obj_l_signature,   F_R) \
+   do_name(     hash_memory_copies_array_get_name,               "hash_memory_copies_array_get")                        \
+  do_intrinsic(_hash_memory_copies_starting_pos_get, java_lang_Object, hash_memory_copies_starting_pos_get_name, obj_l_signature, F_R) \
+   do_name(     hash_memory_copies_starting_pos_get_name,        "hash_memory_copies_starting_pos_get")                 \
+  do_intrinsic(_hash_consumer_lengths_get, java_lang_Object,      hash_consumer_lengths_get_name, obj_vo_signature, F_R)\
+   do_name(     hash_consumer_lengths_get_name,                  "hash_consumer_lengths_get")                           \
   do_intrinsic(_hash_dupl_array_get,      java_lang_Object,       hash_dupl_array_get_name, obj_vo_signature,   F_R)    \
    do_name(     hash_dupl_array_get_name,                        "hash_dupl_array_get")                                 \
-  do_intrinsic(_hash_memory_starting_pos_get, java_lang_Object,   hash_memory_starting_pos_get_name, obj_int_signature, F_R)  \
+  do_intrinsic(_hash_memory_starting_pos_get, java_lang_Object,   hash_memory_starting_pos_get_name, obj_int_signature, F_R) \
    do_name(     hash_memory_starting_pos_get_name,               "hash_memory_starting_pos_get")                        \
-  do_intrinsic(_hash_operator_get,        java_lang_Object,       hash_operator_get_name, obj_int_vo_signature,   F_R)  \
-   do_name(     hash_operator_get_name,                          "hash_operator_get")                                   \
-  do_intrinsic(_my_debug_print,           java_lang_Object,       my_debug_print_name, obj_long_vo_signature,   F_R)         \
+  do_intrinsic(_hash_consumer_get,        java_lang_Object,       hash_consumer_get_name, obj_vo_signature,   F_R)      \
+   do_name(     hash_consumer_get_name,                          "hash_consumer_get")                                   \
+  do_intrinsic(_hash_consumer_comp_array_length_get, java_lang_Object, hash_consumer_comp_array_length_get_name, obj_int_signature,   F_R)  \
+   do_name(     hash_consumer_comp_array_length_get_name,        "hash_consumer_comp_array_length_get")                 \
+  do_intrinsic(_my_debug_print,           java_lang_Object,       my_debug_print_name, obj_long_vo_signature,   F_R)    \
    do_name(     my_debug_print_name,                             "my_debug_print")                                      \
                                                                                                                         \
   /* here are the math names, all together: */                                                                          \
