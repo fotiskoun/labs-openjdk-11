@@ -402,8 +402,21 @@ UNSAFE_ENTRY(void, Unsafe_SetMemory0(JNIEnv *env, jobject unsafe, jobject obj, j
   Copy::fill_to_memory_atomic(p, sz, value);
 } UNSAFE_END
 
-long baseAddress = 0;
-long range = 0;
+int raMapSize = 20;
+struct rangeMap {
+    long baseAddress;
+    long rangeSize;
+};
+struct rangeMap raMap[20];
+
+long raIndex=0;
+
+int raMod(int a, int b)
+{
+  int r = a % b;
+  return r < 0 ? r + b : r;
+}
+
 UNSAFE_ENTRY(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobject srcObj, jlong srcOffset, jobject dstObj, jlong dstOffset, jlong size)) {
   size_t sz = (size_t)size;
 
@@ -418,15 +431,20 @@ UNSAFE_ENTRY(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobject srcOb
     long startPosInMap = 0;
     keyInMap = (long)dst;
     if ((long) dstObj > 0) {
-      if (srcOffset >=baseAddress and srcOffset < baseAddress+range) {
-        valueInMap = baseAddress;
-        startPosInMap = srcOffset - baseAddress;
+      for (int raIn=raIndex; raIn>raIndex-raMapSize; raIn--) {
+        if (srcOffset >= raMap[raMod(raIn,raMapSize)].baseAddress and srcOffset < raMap[raMod(raIn,raMapSize)].baseAddress + raMap[raMod(raIn,raMapSize)].rangeSize) {
+          valueInMap = raMap[raMod(raIn,raMapSize)].baseAddress;
+          startPosInMap = srcOffset - raMap[raMod(raIn,raMapSize)].baseAddress;
+        }
       }
     } else {
-      baseAddress = keyInMap;
-      range = size;
+      raMap[raIndex].baseAddress = keyInMap;
+      raMap[raIndex].rangeSize = size;
+      raIndex = raMod(raIndex+1,raMapSize);
     }
     ht_insert_mem_copies_map(htMemoryCopies, keyInMap, valueInMap, startPosInMap);
+//    printf("allocation with srcOff %ld, dstObj %ld, dstOff %ld and size %ld, keyInmap %ld and value %ld and start %ld\n",
+//           srcOffset, (long) dstObj, dstOffset, size, keyInMap, valueInMap, startPosInMap);
 //    printf("allocation with key %ld or %ld, value %ld or %ld \n", keyInMap, (long)dst, valueInMap, (long)src);
 //    printf("src is pointer %p and long %ld and dst is pointer %p and long %ld \n", src, (long) src, dst, (long) dst);
   }
