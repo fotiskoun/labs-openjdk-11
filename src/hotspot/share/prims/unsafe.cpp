@@ -417,6 +417,8 @@ int raMod(int a, int b)
   return r < 0 ? r + b : r;
 }
 
+pthread_mutex_t mtxMemcopies=PTHREAD_MUTEX_INITIALIZER;
+
 UNSAFE_ENTRY(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobject srcObj, jlong srcOffset, jobject dstObj, jlong dstOffset, jlong size)) {
   size_t sz = (size_t)size;
 
@@ -442,7 +444,10 @@ UNSAFE_ENTRY(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobject srcOb
       raMap[raIndex].rangeSize = size;
       raIndex = raMod(raIndex+1,raMapSize);
     }
+    pthread_mutex_lock(&mtxMemcopies);
     ht_insert_mem_copies_map(htMemoryCopies, keyInMap, valueInMap, startPosInMap);
+    pthread_mutex_unlock(&mtxMemcopies);
+
 //    printf("allocation with srcOff %ld, dstObj %ld, dstOff %ld and size %ld, keyInmap %ld and value %ld and start %ld\n",
 //           srcOffset, (long) dstObj, dstOffset, size, keyInMap, valueInMap, startPosInMap);
 //    printf("allocation with key %ld or %ld, value %ld or %ld \n", keyInMap, (long)dst, valueInMap, (long)src);

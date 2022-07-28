@@ -806,7 +806,7 @@ bool ht_insert_consumer_map(HashConsTable *table, typeArrayOopDesc *key, typeArr
   Ht_cons_item *item = create_op_item(key, value, lengthsAr, compArrayLength);
 
   // Compute the index
-  int index = hash_function(key, -1);
+  int index = knuth_hash_longs((long) key );
 
   Ht_cons_item *current_item = table->items[index];
   if (current_item == NULL) {
@@ -1037,7 +1037,7 @@ jint ht_search_mem_starting_pos(HashMemTable *table, typeArrayOopDesc *key) {
 typeArrayOopDesc *ht_search_consumer_array(HashConsTable *table, typeArrayOopDesc *key) {
   // Searches the key in the hashtable
   // and returns NULL if it doesn't exist
-  int index = hash_function(key, -1);
+  int index = knuth_hash_longs((long) key);
   Ht_cons_item *item = table->items[index];
 
 
@@ -1066,7 +1066,7 @@ typeArrayOopDesc *ht_search_consumer_array(HashConsTable *table, typeArrayOopDes
 typeArrayOopDesc *ht_search_consumer_lengths_array(HashConsTable *table, typeArrayOopDesc *key) {
   // Searches the key in the hashtable
   // and returns NULL if it doesn't exist
-  int index = hash_function(key, -1);
+  int index = knuth_hash_longs((long) key);
   Ht_cons_item *item = table->items[index];
 
 
@@ -1095,7 +1095,7 @@ typeArrayOopDesc *ht_search_consumer_lengths_array(HashConsTable *table, typeArr
 jint ht_search_consumer_comp_array_length(HashConsTable *table, typeArrayOopDesc *key) {
   // Searches the key in the hashtable
   // and returns NULL if it doesn't exist
-  int index = hash_function(key, -1);
+  int index = knuth_hash_longs((long)key);
   Ht_cons_item *item = table->items[index];
 
 
@@ -1186,6 +1186,7 @@ HashDuplTable *htDuplicate = create_dupl_table(DUPL_CAPACITY);
 
 HashMemoryCopiesTable *htMemoryCopies = create_mem_copies_table(MEM_COPY_CAPACITY);
 
+pthread_mutex_t mtxConsumer=PTHREAD_MUTEX_INITIALIZER;
 
 // Object.hash_put() to add items in map, with 0 add to memcopy map and with 1 in consumer
 JRT_LEAF(jboolean,
@@ -1200,7 +1201,11 @@ JRT_LEAF(jboolean,
       printf("lengthsArray is empty pointer: %p\n", lengthsArray);
       return false;
     }
-    return ht_insert_consumer_map(htConsumer, ar1,  ar2, lengthsArray, startingPositionOrcompArrayLength);
+    pthread_mutex_lock(&mtxConsumer);
+    jboolean retVal= ht_insert_consumer_map(htConsumer, ar1,  ar2, lengthsArray, startingPositionOrcompArrayLength);
+    pthread_mutex_unlock(&mtxConsumer);
+
+    return retVal;
   } else if (checkMap == 2){ //inserting in duplicate map
     printf("insert duplicate map pointer1 %p pointer2 %p and pos %d\n", ar1, ar2, startingPositionOrcompArrayLength);
     return ht_insert_dupl_map(htDuplicate, ar1, ar2);
