@@ -514,6 +514,7 @@ struct Ht_cons_item {
     typeArrayOopDesc *value;
     typeArrayOopDesc *lengthsArray;
     int compArrayLength;
+    int arraysCreatedIndex;
 };
 
 struct Ht_mem_item {
@@ -586,7 +587,7 @@ Ht_mem_item *create_mem_item(typeArrayOopDesc *key, int startingPosition, typeAr
   return item;
 }
 
-Ht_cons_item *create_op_item(typeArrayOopDesc *key, typeArrayOopDesc *value, typeArrayOopDesc *lengths, int compArrayLength) {
+Ht_cons_item *create_op_item(typeArrayOopDesc *key, typeArrayOopDesc *value, typeArrayOopDesc *lengths, int compArrayLength, int arraysCreatedIndex) {
   // Creates a pointer to a new hash table item
   Ht_cons_item *item = (Ht_cons_item *) malloc(sizeof(Ht_cons_item));
 
@@ -594,6 +595,7 @@ Ht_cons_item *create_op_item(typeArrayOopDesc *key, typeArrayOopDesc *value, typ
   item->value = value;
   item->lengthsArray = lengths;
   item->compArrayLength = compArrayLength;
+  item->arraysCreatedIndex = arraysCreatedIndex;
 
   return item;
 }
@@ -801,6 +803,7 @@ void handle_consumer_collision(HashConsTable *table, Ht_cons_item *item, int ind
       table->items[modIndex]->value = item->value;
       table->items[modIndex]->lengthsArray = item->lengthsArray;
       table->items[modIndex]->compArrayLength = item->compArrayLength;
+      table->items[modIndex]->arraysCreatedIndex = item->arraysCreatedIndex;
       return;
     }
   }
@@ -809,10 +812,10 @@ void handle_consumer_collision(HashConsTable *table, Ht_cons_item *item, int ind
 
 bool firstTime = false;
 bool ht_insert_consumer_map(HashConsTable *table, typeArrayOopDesc *key, typeArrayOopDesc *value,
-                            typeArrayOopDesc *lengthsAr, jint compArrayLength)
+                            typeArrayOopDesc *lengthsAr, jint compArrayLength, jint arraysCreatedIndex)
 {
   // Create the item
-  Ht_cons_item *item = create_op_item(key, value, lengthsAr, compArrayLength);
+  Ht_cons_item *item = create_op_item(key, value, lengthsAr, compArrayLength, arraysCreatedIndex);
 
   // Compute the index
   int index = /*hash_function(key, -1); knuth_hash_longs((long) key );*/ mod_hash((long) key, (long) CONSUMER_CAPACITY);
@@ -842,6 +845,7 @@ bool ht_insert_consumer_map(HashConsTable *table, typeArrayOopDesc *key, typeArr
       table->items[index]->value = value;
       table->items[index]->lengthsArray = lengthsAr;
       table->items[index]->compArrayLength = compArrayLength;
+      table->items[index]->arraysCreatedIndex = arraysCreatedIndex;
       return true;
     }
     else {
@@ -1109,6 +1113,7 @@ struct consumer_res {
     typeArrayOopDesc* runs;
     typeArrayOopDesc* lengths;
     int arSize;
+    int arraysCreatedIndex;
 };
 
 void ht_search_consumer_lengths_struct_get(HashConsTable *table, typeArrayOopDesc *key, consumer_res &compItem) {
@@ -1124,6 +1129,7 @@ void ht_search_consumer_lengths_struct_get(HashConsTable *table, typeArrayOopDes
       compItem.runs = item->value;
       compItem.lengths = item->lengthsArray;
       compItem.arSize = item->compArrayLength;
+      compItem.arraysCreatedIndex = item->arraysCreatedIndex;
       return;
     } else {
       //CHECK FOR COLLISIONS
@@ -1136,6 +1142,7 @@ void ht_search_consumer_lengths_struct_get(HashConsTable *table, typeArrayOopDes
             compItem.runs = collisionItem->value;
             compItem.lengths = collisionItem->lengthsArray;
             compItem.arSize = collisionItem->compArrayLength;
+            compItem.arraysCreatedIndex = item->arraysCreatedIndex;
             return;
           }
         } else {
@@ -1151,6 +1158,7 @@ void ht_search_consumer_lengths_struct_get(HashConsTable *table, typeArrayOopDes
   compItem.runs = NULL;
   compItem.lengths = NULL;
   compItem.arSize = 0;
+  compItem.arraysCreatedIndex = -1;
   return;
 }
 
@@ -1257,7 +1265,7 @@ HashMemoryCopiesTable *htMemoryCopies = create_mem_copies_table(MEM_COPY_CAPACIT
 // Object.hash_put() to add items in map, with 0 add to memcopy map and with 1 in consumer
 JVM_ENTRY_NO_ENV(jboolean,
          JVMCIRuntime::object_hash_put(JNIEnv* env, typeArrayOopDesc* ar1, jint startingPositionOrcompArrayLength,
-                                       typeArrayOopDesc* ar2, typeArrayOopDesc* lengthsArray,  jint checkMap))
+                                       typeArrayOopDesc* ar2, typeArrayOopDesc* lengthsArray,  jint checkMap, jint arraysCreatedIndex))
   if(checkMap == 0){ //inserting in mem map
     printf("I start put in memory pointer1 %p pointer2 %p and pos %d\n", ar1, ar2, startingPositionOrcompArrayLength);
     return ht_insert_mem_map(htMemCopy, ar1, startingPositionOrcompArrayLength, ar2);
@@ -1267,7 +1275,7 @@ JVM_ENTRY_NO_ENV(jboolean,
 
 
 //    pthread_mutex_lock(&mtxConsumer);
-    jboolean retVal= ht_insert_consumer_map(htConsumer, ar1,  ar2, lengthsArray, startingPositionOrcompArrayLength);
+    jboolean retVal= ht_insert_consumer_map(htConsumer, ar1,  ar2, lengthsArray, startingPositionOrcompArrayLength, arraysCreatedIndex);
 //    pthread_mutex_unlock(&mtxConsumer);
 
     return retVal;
@@ -1376,14 +1384,6 @@ JRT_LEAF(void , JVMCIRuntime::object_hash_dupl_array_get(JavaThread* thread, typ
 
 JRT_END
 
-// Object.hash_memory_starting_pos_get() fast path, caller does slow path
-JRT_LEAF(jint , JVMCIRuntime::object_hash_memory_starting_pos_get(JavaThread * thread, typeArrayOopDesc * ar1))
-  jint startPos = ht_search_mem_starting_pos(htMemCopy, ar1);
-  printf("This is the starting pos get %p %d\n", ar1,startPos);
-  return startPos;
-
-JRT_END
-
 consumer_res keepReturnItem;
 
 // Object.hash_consumer_get() fast path, caller does slow path
@@ -1423,6 +1423,16 @@ JRT_LEAF(jint , JVMCIRuntime::object_hash_consumer_comp_array_length_get(JavaThr
 //  printf("This is the consumer length of compressed array get for array %p, length %d\n", ar1, compArrayLength);
 
   return keepReturnItem.arSize;//compArrayLength;
+
+JRT_END
+
+
+// Object.hash_memory_starting_pos_get() fast path, caller does slow path
+//TODO: CHANGING THAT JUST TO RETURN FOR NOW THE ARRAYSCREATEDINDEX
+JRT_LEAF(jint , JVMCIRuntime::object_hash_memory_starting_pos_get(JavaThread * thread, typeArrayOopDesc * ar1))
+//  jint startPos = ht_search_mem_starting_pos(htMemCopy, ar1);
+//  printf("This is the starting pos get %p %d\n", ar1,startPos);
+  return keepReturnItem.arraysCreatedIndex;
 
 JRT_END
 

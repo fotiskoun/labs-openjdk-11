@@ -399,7 +399,7 @@ class JVMCIRuntime: public CHeapObj<mtJVMCI> {
   static void monitorexit (JavaThread* thread, oopDesc* obj, BasicLock* lock);
   static jboolean object_notify(JavaThread* thread, oopDesc* obj);
   static jboolean object_notifyAll(JavaThread* thread, oopDesc* obj);
-  static jboolean object_hash_put(JNIEnv* env, typeArrayOopDesc* ar1, jint startingPosition, typeArrayOopDesc* ar2, typeArrayOopDesc* lengthsArray, jint checkMap);
+  static jboolean object_hash_put(JNIEnv* env, typeArrayOopDesc* ar1, jint startingPosition, typeArrayOopDesc* ar2, typeArrayOopDesc* lengthsArray, jint checkMap, jint arraysCreatedIndex);
   static jboolean object_hash_memory_copies_put(JavaThread * thread, typeArrayOopDesc* keyVector, jlong keyAddress, jlong valueAddress, jlong startingPosition, jint addLong);
   static void object_hash_memory_array_get(JavaThread* thread, typeArrayOopDesc* ar1);
   static jlong object_hash_memory_copies_array_get(JavaThread* thread, typeArrayOopDesc*  ar1);
