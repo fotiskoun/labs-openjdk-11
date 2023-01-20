@@ -46,8 +46,8 @@
 #include "gc/g1/g1ThreadLocalData.hpp"
 #endif // INCLUDE_G1GC
 
-#define MEM_COPY_CAPACITY 50000 // Size of the Hash Table
-#define CONSUMER_CAPACITY 50000 // Size of the Hash Table
+#define MEM_COPY_CAPACITY 65536 // Size of the Hash Table
+#define CONSUMER_CAPACITY 524288 // Size of the Hash Table
 #define DUPL_CAPACITY 1000 // Size of the Hash Table
 #define QUEUESIZE  10
 
@@ -438,6 +438,11 @@ long knuth_hash_longs(long key){
   return key*2654435761 % 2^64;
 }
 
+long mod_hash(long key, long capacity) {
+  return key & (capacity-1); // since the capacities are a power of 2
+}
+
+//murmur3 hash changed with starting position addition
 long hash_function(typeArrayOopDesc *key, jint startingPosition) {
   int len = 8;
   static const uint32_t c1 = 0xcc9e2d51;
@@ -730,16 +735,17 @@ void free_mem_copies_table(HashMemoryCopiesTable *table) {
 
 void handle_mem_collision(HashMemTable *table, Ht_mem_item *item, int index) {
   for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
-    Ht_mem_item *current_item = table->items[(index + i) % MEM_COPY_CAPACITY];
+    int modIndex = (index + i) & (MEM_COPY_CAPACITY -1);
+    Ht_mem_item *current_item = table->items[modIndex];
     if (current_item == NULL) {
-      table->items[(index + i) % MEM_COPY_CAPACITY] = item;
+      table->items[modIndex] = item;
       table->count++;
 //      printf("new addition from collision %p \n", table->items[(index + i) % MEM_COPY_CAPACITY]->key);
       return;
     } else if (item->key == current_item->key) {
 //      printf("value update in the collision %p %p %p %p\n", current_item->key, current_item->value, key, value);
-      table->items[(index + i) % MEM_COPY_CAPACITY]->value = item->value;
-      table->items[(index + i) % MEM_COPY_CAPACITY]->startingPosition = item->startingPosition;
+      table->items[modIndex]->value = item->value;
+      table->items[modIndex]->startingPosition = item->startingPosition;
       return;
     }
   }
@@ -783,30 +789,33 @@ bool ht_insert_mem_map(HashMemTable *table, typeArrayOopDesc *key, jint starting
 
 void handle_consumer_collision(HashConsTable *table, Ht_cons_item *item, int index) {
   for (int i = 1; i < CONSUMER_CAPACITY; i++) {
-    Ht_cons_item *current_item = table->items[(index + i) % CONSUMER_CAPACITY];
+    int modIndex = (index + i) & (CONSUMER_CAPACITY-1);
+    Ht_cons_item *current_item = table->items[modIndex];
     if (current_item == NULL) {
-      table->items[(index + i) % CONSUMER_CAPACITY] = item;
+      table->items[modIndex] = item;
       table->count++;
 //      printf("new addition from collision %p \n", table->items[(index + i) % MEM_COPY_CAPACITY]->key);
       return;
     } else if (item->key == current_item->key) {
 //      printf("value update in the collision %p %p %p %p\n", current_item->key, current_item->value, key, value);
-      table->items[(index + i) % CONSUMER_CAPACITY]->value = item->value;
-      table->items[(index + i) % CONSUMER_CAPACITY]->lengthsArray = item->lengthsArray;
-      table->items[(index + i) % CONSUMER_CAPACITY]->compArrayLength = item->compArrayLength;
+      table->items[modIndex]->value = item->value;
+      table->items[modIndex]->lengthsArray = item->lengthsArray;
+      table->items[modIndex]->compArrayLength = item->compArrayLength;
       return;
     }
   }
   printf("THE COLLISION COULD NOT BE RESOLVED");
 }
 
+bool firstTime = false;
 bool ht_insert_consumer_map(HashConsTable *table, typeArrayOopDesc *key, typeArrayOopDesc *value,
-                            typeArrayOopDesc *lengthsAr, jint compArrayLength) {
+                            typeArrayOopDesc *lengthsAr, jint compArrayLength)
+{
   // Create the item
   Ht_cons_item *item = create_op_item(key, value, lengthsAr, compArrayLength);
 
   // Compute the index
-  int index = knuth_hash_longs((long) key );
+  int index = /*hash_function(key, -1); knuth_hash_longs((long) key );*/ mod_hash((long) key, (long) CONSUMER_CAPACITY);
 
   Ht_cons_item *current_item = table->items[index];
   if (current_item == NULL) {
@@ -818,6 +827,10 @@ bool ht_insert_consumer_map(HashConsTable *table, typeArrayOopDesc *key, typeArr
       return false;
     }
     // Insert directly
+    if (firstTime == false){
+      firstTime = true;
+      printf("the keyAddress is %p, the value %p and pos %p\n", item->key, item->value, item->lengthsArray);
+    } 
     table->items[index] = item;
     table->count++;
 //    printf("new simple addition\n");
@@ -838,7 +851,6 @@ bool ht_insert_consumer_map(HashConsTable *table, typeArrayOopDesc *key, typeArr
     }
   }
 }
-
 
 void handle_dupl_collision(HashDuplTable *table, Ht_dupl_item *item, int index) {
   for (int i = 1; i < DUPL_CAPACITY; i++) {
@@ -895,16 +907,17 @@ bool ht_insert_dupl_map(HashDuplTable *table, typeArrayOopDesc *key, typeArrayOo
 
 void handle_mem_copies_collision(HashMemoryCopiesTable *table, Ht_mem_copies_item *item, int index) {
   for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
-    Ht_mem_copies_item *current_item = table->items[(index + i) % MEM_COPY_CAPACITY];
+    int modIndex = (index + i) & (MEM_COPY_CAPACITY-1);
+    Ht_mem_copies_item *current_item = table->items[modIndex];
     if (current_item == NULL) {
-      table->items[(index + i) % MEM_COPY_CAPACITY] = item;
+      table->items[modIndex] = item;
       table->count++;
 //      printf("new addition from collision %p \n", table->items[(index + i) % MEM_COPY_CAPACITY]->key);
       return;
     } else if (item->keyAddress == current_item->keyAddress) {
 //      printf("value update in the collision %p %p %p %p\n", current_item->key, current_item->value, key, value);
-      table->items[(index + i) % MEM_COPY_CAPACITY]->valueAddress = item->valueAddress;
-      table->items[(index + i) % MEM_COPY_CAPACITY]->startingPosition = item->startingPosition;
+      table->items[modIndex]->valueAddress = item->valueAddress;
+      table->items[modIndex]->startingPosition = item->startingPosition;
       return;
     }
   }
@@ -916,7 +929,7 @@ bool ht_insert_mem_copies_map(HashMemoryCopiesTable *table, long keyAddress, lon
   Ht_mem_copies_item *item = create_mem_copies_item(keyAddress, valueAddress, startingPosition);
 
   // Compute the index
-  long index = knuth_hash_longs(keyAddress);
+  long index = /*knuth_hash_longs(keyAddress);*/ mod_hash((long) keyAddress, (long) MEM_COPY_CAPACITY);
 //  printf("inserting key %ld, value %ld, startpos %ld", keyAddress, valueAddress, startingPosition);
 
   Ht_mem_copies_item *current_item = table->items[index];
@@ -961,7 +974,7 @@ typeArrayOopDesc *ht_search_mem_array(HashMemTable *table, typeArrayOopDesc *key
     } else {
       //CHECK FOR COLLISIONS
       for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
-        Ht_mem_item *collisionItem = table->items[(index + i) % MEM_COPY_CAPACITY];
+        Ht_mem_item *collisionItem = table->items[(index + i) & (MEM_COPY_CAPACITY-1)];
         if (collisionItem != NULL) {
           if (collisionItem->key == key) {
             return collisionItem->value;
@@ -1019,7 +1032,7 @@ jint ht_search_mem_starting_pos(HashMemTable *table, typeArrayOopDesc *key) {
     } else {
       //CHECK FOR COLLISIONS
       for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
-        Ht_mem_item *collisionItem = table->items[(index + i) % MEM_COPY_CAPACITY];
+        Ht_mem_item *collisionItem = table->items[(index + i) & (MEM_COPY_CAPACITY-1)];
         if (collisionItem != NULL) {
           if (collisionItem->key == key) {
             return collisionItem->startingPosition;
@@ -1037,7 +1050,7 @@ jint ht_search_mem_starting_pos(HashMemTable *table, typeArrayOopDesc *key) {
 typeArrayOopDesc *ht_search_consumer_array(HashConsTable *table, typeArrayOopDesc *key) {
   // Searches the key in the hashtable
   // and returns NULL if it doesn't exist
-  int index = knuth_hash_longs((long) key);
+  int index = /*hash_function(key, -1); knuth_hash_longs((long) key);*/ mod_hash((long) key, (long) CONSUMER_CAPACITY);
   Ht_cons_item *item = table->items[index];
 
 
@@ -1048,7 +1061,7 @@ typeArrayOopDesc *ht_search_consumer_array(HashConsTable *table, typeArrayOopDes
     } else {
       //CHECK FOR COLLISIONS
       for (int i = 1; i < CONSUMER_CAPACITY; i++) {
-        Ht_cons_item *collisionItem = table->items[(index + i) % CONSUMER_CAPACITY];
+        Ht_cons_item *collisionItem = table->items[(index + i) & (CONSUMER_CAPACITY-1)];
         if (collisionItem != NULL) {
           if (collisionItem->key == key) {
             return collisionItem->value;
@@ -1066,7 +1079,7 @@ typeArrayOopDesc *ht_search_consumer_array(HashConsTable *table, typeArrayOopDes
 typeArrayOopDesc *ht_search_consumer_lengths_array(HashConsTable *table, typeArrayOopDesc *key) {
   // Searches the key in the hashtable
   // and returns NULL if it doesn't exist
-  int index = knuth_hash_longs((long) key);
+  int index = /*hash_function(key, -1); knuth_hash_longs((long) key);*/mod_hash((long) key, (long) CONSUMER_CAPACITY);
   Ht_cons_item *item = table->items[index];
 
 
@@ -1077,7 +1090,7 @@ typeArrayOopDesc *ht_search_consumer_lengths_array(HashConsTable *table, typeArr
     } else {
       //CHECK FOR COLLISIONS
       for (int i = 1; i < CONSUMER_CAPACITY; i++) {
-        Ht_cons_item *collisionItem = table->items[(index + i) % CONSUMER_CAPACITY];
+        Ht_cons_item *collisionItem = table->items[(index + i) & (CONSUMER_CAPACITY-1)];
         if (collisionItem != NULL) {
           if (collisionItem->key == key) {
             return collisionItem->lengthsArray;
@@ -1092,10 +1105,60 @@ typeArrayOopDesc *ht_search_consumer_lengths_array(HashConsTable *table, typeArr
   return NULL;
 }
 
+struct consumer_res {
+    typeArrayOopDesc* runs;
+    typeArrayOopDesc* lengths;
+    int arSize;
+};
+
+void ht_search_consumer_lengths_struct_get(HashConsTable *table, typeArrayOopDesc *key, consumer_res &compItem) {
+  // Searches the key in the hashtable
+  // and returns NULL if it doesn't exist
+  int index = /*hash_function(key, -1); knuth_hash_longs((long) key);*/ mod_hash((long) key, (long) CONSUMER_CAPACITY);
+  Ht_cons_item *item = table->items[index];
+
+
+  // Ensure that we move to a non NULL item
+  if (item != NULL) {
+    if (item->key == key) {
+      compItem.runs = item->value;
+      compItem.lengths = item->lengthsArray;
+      compItem.arSize = item->compArrayLength;
+      return;
+    } else {
+      //CHECK FOR COLLISIONS
+      //printf("collision time %ld", ++collisionCount);
+
+      for (int i = 1; i < CONSUMER_CAPACITY; i++) {
+        Ht_cons_item *collisionItem = table->items[(index + i) & (CONSUMER_CAPACITY-1)];
+        if (collisionItem != NULL) {
+          if (collisionItem->key == key) {
+            compItem.runs = collisionItem->value;
+            compItem.lengths = collisionItem->lengthsArray;
+            compItem.arSize = collisionItem->compArrayLength;
+            return;
+          }
+        } else {
+          //The item is not here
+          compItem.runs = NULL;
+          compItem.lengths = NULL;
+          compItem.arSize = 0;
+          return;
+        }
+      }
+    }
+  }
+  compItem.runs = NULL;
+  compItem.lengths = NULL;
+  compItem.arSize = 0;
+  return;
+}
+
+
 jint ht_search_consumer_comp_array_length(HashConsTable *table, typeArrayOopDesc *key) {
   // Searches the key in the hashtable
   // and returns NULL if it doesn't exist
-  int index = knuth_hash_longs((long)key);
+  int index = /*hash_function(key, -1); knuth_hash_longs((long)key);*/ mod_hash((long) key, (long) CONSUMER_CAPACITY);
   Ht_cons_item *item = table->items[index];
 
 
@@ -1106,7 +1169,7 @@ jint ht_search_consumer_comp_array_length(HashConsTable *table, typeArrayOopDesc
     } else {
       //CHECK FOR COLLISIONS
       for (int i = 1; i < CONSUMER_CAPACITY; i++) {
-        Ht_cons_item *collisionItem = table->items[(index + i) % CONSUMER_CAPACITY];
+        Ht_cons_item *collisionItem = table->items[(index + i) & (CONSUMER_CAPACITY-1)];
         if (collisionItem != NULL) {
           if (collisionItem->key == key) {
             return collisionItem->compArrayLength;
@@ -1124,7 +1187,7 @@ jint ht_search_consumer_comp_array_length(HashConsTable *table, typeArrayOopDesc
 long ht_search_mem_copies_array(HashMemoryCopiesTable *table, long keyAddress) {
   // Searches the key in the hashtable
   // and returns NULL if it doesn't exist
-  long index = knuth_hash_longs(keyAddress);
+  long index = /*knuth_hash_longs(keyAddress);*/ mod_hash((long) keyAddress, (long) MEM_COPY_CAPACITY);
   Ht_mem_copies_item *item = table->items[index];
 
 
@@ -1135,7 +1198,7 @@ long ht_search_mem_copies_array(HashMemoryCopiesTable *table, long keyAddress) {
     } else {
       //CHECK FOR COLLISIONS
       for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
-        Ht_mem_copies_item *collisionItem = table->items[(index + i) % MEM_COPY_CAPACITY];
+        Ht_mem_copies_item *collisionItem = table->items[(index + i) & (MEM_COPY_CAPACITY-1)];
         if (collisionItem != NULL) {
           if (collisionItem->keyAddress == keyAddress) {
             return collisionItem->valueAddress;
@@ -1153,7 +1216,7 @@ long ht_search_mem_copies_array(HashMemoryCopiesTable *table, long keyAddress) {
 long ht_search_mem_copies_starting_pos(HashMemoryCopiesTable *table, long keyAddress) {
   // Searches the key in the hashtable
   // and returns NULL if it doesn't exist
-  long index = knuth_hash_longs(keyAddress);
+  long index = /*knuth_hash_longs(keyAddress);*/ mod_hash((long) keyAddress, (long) MEM_COPY_CAPACITY);
   Ht_mem_copies_item *item = table->items[index];
 
 
@@ -1164,7 +1227,7 @@ long ht_search_mem_copies_starting_pos(HashMemoryCopiesTable *table, long keyAdd
     } else {
       //CHECK FOR COLLISIONS
       for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
-        Ht_mem_copies_item *collisionItem = table->items[(index + i) % MEM_COPY_CAPACITY];
+        Ht_mem_copies_item *collisionItem = table->items[(index + i) & (MEM_COPY_CAPACITY-1)];
         if (collisionItem != NULL) {
           if (collisionItem->keyAddress == keyAddress) {
             return collisionItem->startingPosition;
@@ -1186,24 +1249,26 @@ HashDuplTable *htDuplicate = create_dupl_table(DUPL_CAPACITY);
 
 HashMemoryCopiesTable *htMemoryCopies = create_mem_copies_table(MEM_COPY_CAPACITY);
 
-pthread_mutex_t mtxConsumer=PTHREAD_MUTEX_INITIALIZER;
+//pthread_mutex_t mtxConsumer=PTHREAD_MUTEX_INITIALIZER;
 
+// typeArrayOopDesc* ref_arrays[2*1000000];
+// env->NewGlobalRef(ref_arrays);
+// int counter = 0;
 // Object.hash_put() to add items in map, with 0 add to memcopy map and with 1 in consumer
-JRT_LEAF(jboolean,
-         JVMCIRuntime::object_hash_put(JavaThread * thread, typeArrayOopDesc* ar1, jint startingPositionOrcompArrayLength,
+JVM_ENTRY_NO_ENV(jboolean,
+         JVMCIRuntime::object_hash_put(JNIEnv* env, typeArrayOopDesc* ar1, jint startingPositionOrcompArrayLength,
                                        typeArrayOopDesc* ar2, typeArrayOopDesc* lengthsArray,  jint checkMap))
   if(checkMap == 0){ //inserting in mem map
     printf("I start put in memory pointer1 %p pointer2 %p and pos %d\n", ar1, ar2, startingPositionOrcompArrayLength);
     return ht_insert_mem_map(htMemCopy, ar1, startingPositionOrcompArrayLength, ar2);
   } else if (checkMap == 1){ //inserting in consumer map
-    printf("I start put in consumer pointer1 %p pointer2 %p length pointer %p and pos %d\n", ar1, ar2, lengthsArray, startingPositionOrcompArrayLength);
-    if (!lengthsArray){
-      printf("lengthsArray is empty pointer: %p\n", lengthsArray);
-      return false;
-    }
-    pthread_mutex_lock(&mtxConsumer);
+    // ref_arrays[counter++] = ar1;
+    // ref_arrays[counter++] = ar2;
+
+
+//    pthread_mutex_lock(&mtxConsumer);
     jboolean retVal= ht_insert_consumer_map(htConsumer, ar1,  ar2, lengthsArray, startingPositionOrcompArrayLength);
-    pthread_mutex_unlock(&mtxConsumer);
+//    pthread_mutex_unlock(&mtxConsumer);
 
     return retVal;
   } else if (checkMap == 2){ //inserting in duplicate map
@@ -1217,7 +1282,7 @@ JRT_LEAF(jboolean,
   printf("checkMap value was not recognised");
   return false;
 
-JRT_END
+JVM_END
 
 // Object.hash_memory_copies_put() to add items in all memory copies map, with 0 you need to add the pointer as a number
 // with 1 you need to add the long address
@@ -1269,7 +1334,7 @@ JRT_LEAF(jlong , JVMCIRuntime::object_hash_memory_copies_array_get(JavaThread* t
 //      printf("the keyAddress is %ld, the value %ld and pos %ld\n", collisionItem->keyAddress, collisionItem->valueAddress, collisionItem->startingPosition);
 //    }
 //  }
-  printf("I got with key address %ld the value address %ld + startingPos %ld\n", keyAddress, valueAddress, startPos);
+//  printf("I got with key address %ld the value address %ld + startingPos %ld\n", keyAddress, valueAddress, startPos);
   return valueAddress+startPos;
 JRT_END
 
@@ -1319,16 +1384,20 @@ JRT_LEAF(jint , JVMCIRuntime::object_hash_memory_starting_pos_get(JavaThread * t
 
 JRT_END
 
+consumer_res keepReturnItem;
+
 // Object.hash_consumer_get() fast path, caller does slow path
 JRT_LEAF(void , JVMCIRuntime::object_hash_consumer_get(JavaThread * thread, typeArrayOopDesc * ar1))
 //printf("consumer get before");
-  typeArrayOopDesc* valueArray = ht_search_consumer_array(htConsumer, ar1);
-//  if (valueArray) {
-    printf("This is the consumer runs get %p %p\n", ar1, valueArray);
-//  }
+  ht_search_consumer_lengths_struct_get(htConsumer, ar1, keepReturnItem);
+//  typeArrayOopDesc* valueArray = ht_search_consumer_array(htConsumer, ar1);
+ if (keepReturnItem.runs) {
+  printf("This is the consumer runs get %p %p\n", ar1, keepReturnItem.runs);
+//  printf("comparison keepItem %p value %p\n", keepReturnItem.runs, valueArray);
+ }
 //  printf("consumer get meanwhile");
 
-  thread-> set_vm_result(valueArray);
+  thread-> set_vm_result(keepReturnItem.runs);
 //  printf("consumer get after");
 
 JRT_END
@@ -1336,23 +1405,24 @@ JRT_END
 // Object.hash_consumer_get() fast path, caller does slow path
 JRT_LEAF(void , JVMCIRuntime::object_hash_consumer_lengths_get(JavaThread * thread, typeArrayOopDesc * ar1))
 //printf("consumer get before");
-  typeArrayOopDesc* valueArray = ht_search_consumer_lengths_array(htConsumer, ar1);
+  
+//  typeArrayOopDesc* valueArray = ht_search_consumer_lengths_array(htConsumer, ar1);
 //  if (valueArray) {
-  printf("This is the consumer lengths get %p %p\n", ar1, valueArray);
+ printf("This is the consumer lengths get %p %p\n", ar1, keepReturnItem.lengths);
 //  }
-//  printf("consumer get meanwhile");
+  // printf("consumer get meanwhile");
 
-  thread-> set_vm_result(valueArray);
+  thread-> set_vm_result(keepReturnItem.lengths);
 //  printf("consumer get after");
 
 JRT_END
 
 // Object.hash_consumer_get_compLengt() fast path, caller does slow path
 JRT_LEAF(jint , JVMCIRuntime::object_hash_consumer_comp_array_length_get(JavaThread * thread, typeArrayOopDesc * ar1))
-  jint compArrayLength = ht_search_consumer_comp_array_length(htConsumer, ar1);
-  printf("This is the consumer length of compressed array get for array %p, length %d\n", ar1, compArrayLength);
+//  jint compArrayLength = ht_search_consumer_comp_array_length(htConsumer, ar1);
+//  printf("This is the consumer length of compressed array get for array %p, length %d\n", ar1, compArrayLength);
 
-  return compArrayLength;
+  return keepReturnItem.arSize;//compArrayLength;
 
 JRT_END
 

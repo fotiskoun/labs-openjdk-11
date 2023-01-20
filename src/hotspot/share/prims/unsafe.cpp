@@ -427,7 +427,7 @@ UNSAFE_ENTRY(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobject srcOb
 
   void* src = index_oop_from_field_offset_long(srcp, srcOffset);
   void* dst = index_oop_from_field_offset_long(dstp, dstOffset);
-  if (size> 80l) { // This means it needs to transfer at least 80 bytes or at least 10 elems from the long array
+  if (size> 2000l) { // This means it needs to transfer at least 80 bytes or at least 10 elems from the long array
     long keyInMap;
     long valueInMap = srcOffset;
     long startPosInMap = 0;
@@ -445,6 +445,7 @@ UNSAFE_ENTRY(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobject srcOb
       raIndex = raMod(raIndex+1,raMapSize);
     }
     pthread_mutex_lock(&mtxMemcopies);
+//    printf("I am inserting key: %ld, val: %ld, pos: %ld", keyInMap, valueInMap, startPosInMap);
     ht_insert_mem_copies_map(htMemoryCopies, keyInMap, valueInMap, startPosInMap);
     pthread_mutex_unlock(&mtxMemcopies);
 
