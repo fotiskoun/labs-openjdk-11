@@ -427,7 +427,7 @@ UNSAFE_ENTRY(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobject srcOb
 
   void* src = index_oop_from_field_offset_long(srcp, srcOffset);
   void* dst = index_oop_from_field_offset_long(dstp, dstOffset);
-  if (size> 2000l) { // This means it needs to transfer at least 80 bytes or at least 10 elems from the long array
+  if (size> 80l) { // This means it needs to transfer at least 80 bytes or at least 10 elems from the long array
     long keyInMap;
     long valueInMap = srcOffset;
     long startPosInMap = 0;
@@ -444,15 +444,9 @@ UNSAFE_ENTRY(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobject srcOb
       raMap[raIndex].rangeSize = size;
       raIndex = raMod(raIndex+1,raMapSize);
     }
-    pthread_mutex_lock(&mtxMemcopies);
-//    printf("I am inserting key: %ld, val: %ld, pos: %ld", keyInMap, valueInMap, startPosInMap);
+    // pthread_mutex_lock(&mtxMemcopies);
     ht_insert_mem_copies_map(htMemoryCopies, keyInMap, valueInMap, startPosInMap);
-    pthread_mutex_unlock(&mtxMemcopies);
-
-//    printf("allocation with srcOff %ld, dstObj %ld, dstOff %ld and size %ld, keyInmap %ld and value %ld and start %ld\n",
-//           srcOffset, (long) dstObj, dstOffset, size, keyInMap, valueInMap, startPosInMap);
-//    printf("allocation with key %ld or %ld, value %ld or %ld \n", keyInMap, (long)dst, valueInMap, (long)src);
-//    printf("src is pointer %p and long %ld and dst is pointer %p and long %ld \n", src, (long) src, dst, (long) dst);
+    // pthread_mutex_unlock(&mtxMemcopies);
   }
 
   Copy::conjoint_memory_atomic(src, dst, sz);

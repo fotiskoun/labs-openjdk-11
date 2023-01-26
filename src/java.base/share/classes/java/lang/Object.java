@@ -32,13 +32,14 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * Every class has {@code Object} as a superclass. All objects,
  * including arrays, implement the methods of this class.
  *
- * @author  unascribed
- * @see     java.lang.Class
- * @since   1.0
+ * @author unascribed
+ * @see java.lang.Class
+ * @since 1.0
  */
 public class Object {
 
     private static native void registerNatives();
+
     static {
         registerNatives();
     }
@@ -47,17 +48,20 @@ public class Object {
      * Constructs a new object.
      */
     @HotSpotIntrinsicCandidate
-    public Object() {}
+    public Object() {
+    }
 
     /**
      * Returns the runtime class of this {@code Object}. The returned
      * {@code Class} object is the object that is locked by {@code
      * static synchronized} methods of the represented class.
      *
-     * <p><b>The actual result type is {@code Class<? extends |X|>}
+     * <p>
+     * <b>The actual result type is {@code Class<? extends |X|>}
      * where {@code |X|} is the erasure of the static type of the
      * expression on which {@code getClass} is called.</b> For
-     * example, no cast is required in this code fragment:</p>
+     * example, no cast is required in this code fragment:
+     * </p>
      *
      * <p>
      * {@code Number n = 0;                             }<br>
@@ -79,20 +83,20 @@ public class Object {
      * The general contract of {@code hashCode} is:
      * <ul>
      * <li>Whenever it is invoked on the same object more than once during
-     *     an execution of a Java application, the {@code hashCode} method
-     *     must consistently return the same integer, provided no information
-     *     used in {@code equals} comparisons on the object is modified.
-     *     This integer need not remain consistent from one execution of an
-     *     application to another execution of the same application.
+     * an execution of a Java application, the {@code hashCode} method
+     * must consistently return the same integer, provided no information
+     * used in {@code equals} comparisons on the object is modified.
+     * This integer need not remain consistent from one execution of an
+     * application to another execution of the same application.
      * <li>If two objects are equal according to the {@code equals(Object)}
-     *     method, then calling the {@code hashCode} method on each of
-     *     the two objects must produce the same integer result.
+     * method, then calling the {@code hashCode} method on each of
+     * the two objects must produce the same integer result.
      * <li>It is <em>not</em> required that if two objects are unequal
-     *     according to the {@link java.lang.Object#equals(java.lang.Object)}
-     *     method, then calling the {@code hashCode} method on each of the
-     *     two objects must produce distinct integer results.  However, the
-     *     programmer should be aware that producing distinct integer results
-     *     for unequal objects may improve the performance of hash tables.
+     * according to the {@link java.lang.Object#equals(java.lang.Object)}
+     * method, then calling the {@code hashCode} method on each of the
+     * two objects must produce distinct integer results. However, the
+     * programmer should be aware that producing distinct integer results
+     * for unequal objects may improve the performance of hash tables.
      * </ul>
      * <p>
      * As much as is reasonably practical, the hashCode method defined
@@ -101,9 +105,9 @@ public class Object {
      * as some function of an object's memory address at some point
      * in time.)
      *
-     * @return  a hash code value for this object.
-     * @see     java.lang.Object#equals(java.lang.Object)
-     * @see     java.lang.System#identityHashCode
+     * @return a hash code value for this object.
+     * @see java.lang.Object#equals(java.lang.Object)
+     * @see java.lang.System#identityHashCode
      */
     @HotSpotIntrinsicCandidate
     public native int hashCode();
@@ -115,25 +119,25 @@ public class Object {
      * on non-null object references:
      * <ul>
      * <li>It is <i>reflexive</i>: for any non-null reference value
-     *     {@code x}, {@code x.equals(x)} should return
-     *     {@code true}.
+     * {@code x}, {@code x.equals(x)} should return
+     * {@code true}.
      * <li>It is <i>symmetric</i>: for any non-null reference values
-     *     {@code x} and {@code y}, {@code x.equals(y)}
-     *     should return {@code true} if and only if
-     *     {@code y.equals(x)} returns {@code true}.
+     * {@code x} and {@code y}, {@code x.equals(y)}
+     * should return {@code true} if and only if
+     * {@code y.equals(x)} returns {@code true}.
      * <li>It is <i>transitive</i>: for any non-null reference values
-     *     {@code x}, {@code y}, and {@code z}, if
-     *     {@code x.equals(y)} returns {@code true} and
-     *     {@code y.equals(z)} returns {@code true}, then
-     *     {@code x.equals(z)} should return {@code true}.
+     * {@code x}, {@code y}, and {@code z}, if
+     * {@code x.equals(y)} returns {@code true} and
+     * {@code y.equals(z)} returns {@code true}, then
+     * {@code x.equals(z)} should return {@code true}.
      * <li>It is <i>consistent</i>: for any non-null reference values
-     *     {@code x} and {@code y}, multiple invocations of
-     *     {@code x.equals(y)} consistently return {@code true}
-     *     or consistently return {@code false}, provided no
-     *     information used in {@code equals} comparisons on the
-     *     objects is modified.
+     * {@code x} and {@code y}, multiple invocations of
+     * {@code x.equals(y)} consistently return {@code true}
+     * or consistently return {@code false}, provided no
+     * information used in {@code equals} comparisons on the
+     * objects is modified.
      * <li>For any non-null reference value {@code x},
-     *     {@code x.equals(null)} should return {@code false}.
+     * {@code x.equals(null)} should return {@code false}.
      * </ul>
      * <p>
      * The {@code equals} method for class {@code Object} implements
@@ -148,46 +152,58 @@ public class Object {
      * general contract for the {@code hashCode} method, which states
      * that equal objects must have equal hash codes.
      *
-     * @param   obj   the reference object with which to compare.
-     * @return  {@code true} if this object is the same as the obj
-     *          argument; {@code false} otherwise.
-     * @see     #hashCode()
-     * @see     java.util.HashMap
+     * @param obj the reference object with which to compare.
+     * @return {@code true} if this object is the same as the obj
+     *         argument; {@code false} otherwise.
+     * @see #hashCode()
+     * @see java.util.HashMap
      */
     public boolean equals(Object obj) {
         return (this == obj);
     }
 
     /**
-     * Creates and returns a copy of this object.  The precise meaning
+     * Creates and returns a copy of this object. The precise meaning
      * of "copy" may depend on the class of the object. The general
      * intent is that, for any object {@code x}, the expression:
      * <blockquote>
+     * 
      * <pre>
-     * x.clone() != x</pre></blockquote>
+     * x.clone() != x
+     * </pre>
+     * 
+     * </blockquote>
      * will be true, and that the expression:
      * <blockquote>
+     * 
      * <pre>
-     * x.clone().getClass() == x.getClass()</pre></blockquote>
+     * x.clone().getClass() == x.getClass()
+     * </pre>
+     * 
+     * </blockquote>
      * will be {@code true}, but these are not absolute requirements.
      * While it is typically the case that:
      * <blockquote>
+     * 
      * <pre>
-     * x.clone().equals(x)</pre></blockquote>
+     * x.clone().equals(x)
+     * </pre>
+     * 
+     * </blockquote>
      * will be {@code true}, this is not an absolute requirement.
      * <p>
      * By convention, the returned object should be obtained by calling
-     * {@code super.clone}.  If a class and all of its superclasses (except
+     * {@code super.clone}. If a class and all of its superclasses (except
      * {@code Object}) obey this convention, it will be the case that
      * {@code x.clone().getClass() == x.getClass()}.
      * <p>
      * By convention, the object returned by this method should be independent
-     * of this object (which is being cloned).  To achieve this independence,
+     * of this object (which is being cloned). To achieve this independence,
      * it may be necessary to modify one or more fields of the object returned
-     * by {@code super.clone} before returning it.  Typically, this means
+     * by {@code super.clone} before returning it. Typically, this means
      * copying any mutable objects that comprise the internal "deep structure"
      * of the object being cloned and replacing the references to these
-     * objects with references to the copies.  If a class contains only
+     * objects with references to the copies. If a class contains only
      * primitive fields or references to immutable objects, then it is usually
      * the case that no fields in the object returned by {@code super.clone}
      * need to be modified.
@@ -210,12 +226,15 @@ public class Object {
      * whose class is {@code Object} will result in throwing an
      * exception at run time.
      *
-     * @return     a clone of this instance.
-     * @throws  CloneNotSupportedException  if the object's class does not
-     *               support the {@code Cloneable} interface. Subclasses
-     *               that override the {@code clone} method can also
-     *               throw this exception to indicate that an instance cannot
-     *               be cloned.
+     * @return a clone of this instance.
+     * @throws CloneNotSupportedException if the object's class does not
+     *                                    support the {@code Cloneable} interface.
+     *                                    Subclasses
+     *                                    that override the {@code clone} method can
+     *                                    also
+     *                                    throw this exception to indicate that an
+     *                                    instance cannot
+     *                                    be cloned.
      * @see java.lang.Cloneable
      */
     @HotSpotIntrinsicCandidate
@@ -236,11 +255,14 @@ public class Object {
      * object. In other words, this method returns a string equal to the
      * value of:
      * <blockquote>
+     * 
      * <pre>
      * getClass().getName() + '@' + Integer.toHexString(hashCode())
-     * </pre></blockquote>
+     * </pre>
+     * 
+     * </blockquote>
      *
-     * @return  a string representation of the object.
+     * @return a string representation of the object.
      */
     public String toString() {
         return getClass().getName() + "@" + Integer.toHexString(hashCode());
@@ -266,17 +288,17 @@ public class Object {
      * <ul>
      * <li>By executing a synchronized instance method of that object.
      * <li>By executing the body of a {@code synchronized} statement
-     *     that synchronizes on the object.
+     * that synchronizes on the object.
      * <li>For objects of type {@code Class,} by executing a
-     *     synchronized static method of that class.
+     * synchronized static method of that class.
      * </ul>
      * <p>
      * Only one thread at a time can own an object's monitor.
      *
-     * @throws  IllegalMonitorStateException  if the current thread is not
-     *               the owner of this object's monitor.
-     * @see        java.lang.Object#notifyAll()
-     * @see        java.lang.Object#wait()
+     * @throws IllegalMonitorStateException if the current thread is not
+     *                                      the owner of this object's monitor.
+     * @see java.lang.Object#notifyAll()
+     * @see java.lang.Object#wait()
      */
     @HotSpotIntrinsicCandidate
     public final native void notify();
@@ -298,10 +320,10 @@ public class Object {
      * description of the ways in which a thread can become the owner of
      * a monitor.
      *
-     * @throws  IllegalMonitorStateException  if the current thread is not
-     *               the owner of this object's monitor.
-     * @see        java.lang.Object#notify()
-     * @see        java.lang.Object#wait()
+     * @throws IllegalMonitorStateException if the current thread is not
+     *                                      the owner of this object's monitor.
+     * @see java.lang.Object#notify()
+     * @see java.lang.Object#wait()
      */
     @HotSpotIntrinsicCandidate
     public final native void notifyAll();
@@ -313,33 +335,36 @@ public class Object {
      * In all respects, this method behaves as if {@code wait(0L, 0)}
      * had been called. See the specification of the {@link #wait(long, int)} method
      * for details.
-     * @param   ar1   the first array reference.
-     * @param   startingPosition   the integer for the starting position.
-     * @param   ar2   the second array reference.
-     * @param   lengths   the second array reference.
-     * @param   checkMap   the integer to determine the map.
-     * @return  {@code true} if this object is the same as the obj
-     * @see    #notify()
-     * @see    #notifyAll()
-     * @see    #wait(long)
-     * @see    #wait(long, int)
+     * 
+     * @param ar1                the first array reference.
+     * @param startingPosition   the integer for the starting position.
+     * @param ar2                the second array reference.
+     * @param lengths            the second array reference.
+     * @param checkMap           the integer to determine the map.
+     * @param arraysCreatedIndex the integer to determine the map.
+     * @return {@code true} if this object is the same as the obj
+     * @see #notify()
+     * @see #notifyAll()
+     * @see #wait(long)
+     * @see #wait(long, int)
      */
     @HotSpotIntrinsicCandidate
-    public final native boolean hash_put(Object[] ar1, int startingPosition, Object[] ar2, Object[] lengths, int checkMap);
+    public final native boolean hash_put(Object[] ar1, int startingPosition, Object[] ar2, Object[] lengths,
+            int checkMap, int arraysCreatedIndex);
 
     /**
-     * It stores in the memory copies map an address with  an address and value
-     * @param   keyVector   the first vector reference address.
-     * @param   keyAddress   the first array address.
-     * @param   valueAddress   the value address.
-     * @param   startingPosition   the starting position.
-     * @param   addLong   decide to add the pointer ot the long as a key.
-     * @return  {@code true} if it correctly enters in map
+     * It stores in the memory copies map an address with an address and value
+     * 
+     * @param keyVector        the first vector reference address.
+     * @param keyAddress       the first array address.
+     * @param valueAddress     the value address.
+     * @param startingPosition the starting position.
+     * @param addLong          decide to add the pointer ot the long as a key.
+     * @return {@code true} if it correctly enters in map
      */
     @HotSpotIntrinsicCandidate
-    public final native boolean hash_memory_copies_put(Object[] keyVector, long keyAddress, long valueAddress, long startingPosition, int addLong);
-
-
+    public final native boolean hash_memory_copies_put(Object[] keyVector, long keyAddress, long valueAddress,
+            long startingPosition, int addLong);
 
     /**
      * Causes the current thread to wait until it is awakened, typically
@@ -348,13 +373,13 @@ public class Object {
      * In all respects, this method behaves as if {@code wait(0L, 0)}
      * had been called. See the specification of the {@link #wait(long, int)} method
      * for details.
-     * @param   ar1   the reference object with which to compare.
-     * @return  double array of the value
+     * 
+     * @param ar1 the reference object with which to compare.
+     * @return double array of the value
      */
     @HotSpotIntrinsicCandidate
     public final native void hash_memory_array_get(Object[] ar1);
 
-
     /**
      * Causes the current thread to wait until it is awakened, typically
      * by being <em>notified</em> or <em>interrupted</em>.
@@ -362,8 +387,9 @@ public class Object {
      * In all respects, this method behaves as if {@code wait(0L, 0)}
      * had been called. See the specification of the {@link #wait(long, int)} method
      * for details.
-     * @param   ar1   the reference object with which to compare.
-     * @return  long value of the unique id address
+     * 
+     * @param ar1 the reference object with which to compare.
+     * @return long value of the unique id address
      */
     @HotSpotIntrinsicCandidate
     public final native long hash_memory_copies_array_get(Object ar1);
@@ -375,8 +401,9 @@ public class Object {
      * In all respects, this method behaves as if {@code wait(0L, 0)}
      * had been called. See the specification of the {@link #wait(long, int)} method
      * for details.
-     * @param   ar1   the reference object with which to compare.
-     * @return  long value of the starting position
+     * 
+     * @param ar1 the reference object with which to compare.
+     * @return long value of the starting position
      */
     @HotSpotIntrinsicCandidate
     public final native long hash_memory_copies_starting_pos_get(Object ar1);
@@ -388,8 +415,9 @@ public class Object {
      * In all respects, this method behaves as if {@code wait(0L, 0)}
      * had been called. See the specification of the {@link #wait(long, int)} method
      * for details.
-     * @param   ar1   the reference object with which to compare.
-     * @return  double array of the value
+     * 
+     * @param ar1 the reference object with which to compare.
+     * @return double array of the value
      */
     @HotSpotIntrinsicCandidate
     public final native void hash_consumer_lengths_get(Object[] ar1);
@@ -401,8 +429,9 @@ public class Object {
      * In all respects, this method behaves as if {@code wait(0L, 0)}
      * had been called. See the specification of the {@link #wait(long, int)} method
      * for details.
-     * @param   ar1   the reference object with which to compare.
-     * @return  double array of the value
+     * 
+     * @param ar1 the reference object with which to compare.
+     * @return double array of the value
      */
     @HotSpotIntrinsicCandidate
     public final native void hash_dupl_array_get(Object[] ar1);
@@ -414,8 +443,9 @@ public class Object {
      * In all respects, this method behaves as if {@code wait(0L, 0)}
      * had been called. See the specification of the {@link #wait(long, int)} method
      * for details.
-     * @param   ar1   the reference object with which to compare.
-     * @return  double array of the value
+     * 
+     * @param ar1 the reference object with which to compare.
+     * @return double array of the value
      */
     @HotSpotIntrinsicCandidate
     public final native int hash_memory_starting_pos_get(Object[] ar1);
@@ -427,8 +457,9 @@ public class Object {
      * In all respects, this method behaves as if {@code wait(0L, 0)}
      * had been called. See the specification of the {@link #wait(long, int)} method
      * for details.
-     * @param   ar1   the reference object with which to compare.
-     * @return  double array of the value
+     * 
+     * @param ar1 the reference object with which to compare.
+     * @return double array of the value
      */
     @HotSpotIntrinsicCandidate
     public final native void hash_consumer_get(Object[] ar1);
@@ -440,8 +471,9 @@ public class Object {
      * In all respects, this method behaves as if {@code wait(0L, 0)}
      * had been called. See the specification of the {@link #wait(long, int)} method
      * for details.
-     * @param   ar1   the reference object with which to compare.
-     * @return  int length of the size of the compressed array
+     * 
+     * @param ar1 the reference object with which to compare.
+     * @return int length of the size of the compressed array
      */
     @HotSpotIntrinsicCandidate
     public final native int hash_consumer_comp_array_length_get(Object[] ar1);
@@ -453,9 +485,10 @@ public class Object {
      * In all respects, this method behaves as if {@code wait(0L, 0)}
      * had been called. See the specification of the {@link #wait(long, int)} method
      * for details.
-     * @param   ar the array to test
-     * @param   printedValue   the integer for the starting position.
-     * @return  no return value
+     * 
+     * @param ar           the array to test
+     * @param printedValue the integer for the starting position.
+     * @return no return value
      */
     @HotSpotIntrinsicCandidate
     public final native void my_debug_print(Object[] ar, long printedValue);
@@ -469,14 +502,17 @@ public class Object {
      * for details.
      *
      * @throws IllegalMonitorStateException if the current thread is not
-     *         the owner of the object's monitor
-     * @throws InterruptedException if any thread interrupted the current thread before or
-     *         while the current thread was waiting. The <em>interrupted status</em> of the
-     *         current thread is cleared when this exception is thrown.
-     * @see    #notify()
-     * @see    #notifyAll()
-     * @see    #wait(long)
-     * @see    #wait(long, int)
+     *                                      the owner of the object's monitor
+     * @throws InterruptedException         if any thread interrupted the current
+     *                                      thread before or
+     *                                      while the current thread was waiting.
+     *                                      The <em>interrupted status</em> of the
+     *                                      current thread is cleared when this
+     *                                      exception is thrown.
+     * @see #notify()
+     * @see #notifyAll()
+     * @see #wait(long)
+     * @see #wait(long, int)
      */
     public final void wait() throws InterruptedException {
         wait(0L);
@@ -491,17 +527,20 @@ public class Object {
      * had been called. See the specification of the {@link #wait(long, int)} method
      * for details.
      *
-     * @param  timeoutMillis the maximum time to wait, in milliseconds
-     * @throws IllegalArgumentException if {@code timeoutMillis} is negative
+     * @param timeoutMillis the maximum time to wait, in milliseconds
+     * @throws IllegalArgumentException     if {@code timeoutMillis} is negative
      * @throws IllegalMonitorStateException if the current thread is not
-     *         the owner of the object's monitor
-     * @throws InterruptedException if any thread interrupted the current thread before or
-     *         while the current thread was waiting. The <em>interrupted status</em> of the
-     *         current thread is cleared when this exception is thrown.
-     * @see    #notify()
-     * @see    #notifyAll()
-     * @see    #wait()
-     * @see    #wait(long, int)
+     *                                      the owner of the object's monitor
+     * @throws InterruptedException         if any thread interrupted the current
+     *                                      thread before or
+     *                                      while the current thread was waiting.
+     *                                      The <em>interrupted status</em> of the
+     *                                      current thread is cleared when this
+     *                                      exception is thrown.
+     * @see #notify()
+     * @see #notifyAll()
+     * @see #wait()
+     * @see #wait(long, int)
      */
     public final native void wait(long timeoutMillis) throws InterruptedException;
 
@@ -532,7 +571,8 @@ public class Object {
      * thread <var>T</var>.
      * <li>The specified amount of real time has elapsed, more or less.
      * The amount of real time, in nanoseconds, is given by the expression
-     * {@code 1000000 * timeoutMillis + nanos}. If {@code timeoutMillis} and {@code nanos}
+     * {@code 1000000 * timeoutMillis + nanos}. If {@code timeoutMillis} and
+     * {@code nanos}
      * are both zero, then real time is not taken into consideration and the
      * thread waits until awakened by one of the other causes.
      * <li>Thread <var>T</var> is awakened spuriously. (See below.)
@@ -551,9 +591,10 @@ public class Object {
      * was invoked.
      * <p>
      * A thread can wake up without being notified, interrupted, or timing out, a
-     * so-called <em>spurious wakeup</em>.  While this will rarely occur in practice,
+     * so-called <em>spurious wakeup</em>. While this will rarely occur in practice,
      * applications must guard against it by testing for the condition that should
-     * have caused the thread to be awakened, and continuing to wait if the condition
+     * have caused the thread to be awakened, and continuing to wait if the
+     * condition
      * is not satisfied. See the example below.
      * <p>
      * For more information on this topic, see section 14.2,
@@ -562,19 +603,26 @@ public class Object {
      * Bloch's <em>Effective Java, Second Edition</em> (Addison-Wesley,
      * 2008).
      * <p>
-     * If the current thread is {@linkplain java.lang.Thread#interrupt() interrupted}
-     * by any thread before or while it is waiting, then an {@code InterruptedException}
-     * is thrown.  The <em>interrupted status</em> of the current thread is cleared when
-     * this exception is thrown. This exception is not thrown until the lock status of
+     * If the current thread is {@linkplain java.lang.Thread#interrupt()
+     * interrupted}
+     * by any thread before or while it is waiting, then an
+     * {@code InterruptedException}
+     * is thrown. The <em>interrupted status</em> of the current thread is cleared
+     * when
+     * this exception is thrown. This exception is not thrown until the lock status
+     * of
      * this object has been restored as described above.
      *
      * @apiNote
-     * The recommended approach to waiting is to check the condition being awaited in
-     * a {@code while} loop around the call to {@code wait}, as shown in the example
-     * below. Among other things, this approach avoids problems that can be caused
-     * by spurious wakeups.
+     *          The recommended approach to waiting is to check the condition being
+     *          awaited in
+     *          a {@code while} loop around the call to {@code wait}, as shown in
+     *          the example
+     *          below. Among other things, this approach avoids problems that can be
+     *          caused
+     *          by spurious wakeups.
      *
-     * <pre>{@code
+     *          <pre>{@code
      *     synchronized (obj) {
      *         while (<condition does not hold> and <timeout not exceeded>) {
      *             long timeoutMillis = ... ; // recompute timeout values
@@ -585,19 +633,24 @@ public class Object {
      *     }
      * }</pre>
      *
-     * @param  timeoutMillis the maximum time to wait, in milliseconds
-     * @param  nanos   additional time, in nanoseconds, in the range range 0-999999 inclusive
-     * @throws IllegalArgumentException if {@code timeoutMillis} is negative,
-     *         or if the value of {@code nanos} is out of range
+     * @param timeoutMillis the maximum time to wait, in milliseconds
+     * @param nanos         additional time, in nanoseconds, in the range range
+     *                      0-999999 inclusive
+     * @throws IllegalArgumentException     if {@code timeoutMillis} is negative,
+     *                                      or if the value of {@code nanos} is out
+     *                                      of range
      * @throws IllegalMonitorStateException if the current thread is not
-     *         the owner of the object's monitor
-     * @throws InterruptedException if any thread interrupted the current thread before or
-     *         while the current thread was waiting. The <em>interrupted status</em> of the
-     *         current thread is cleared when this exception is thrown.
-     * @see    #notify()
-     * @see    #notifyAll()
-     * @see    #wait()
-     * @see    #wait(long)
+     *                                      the owner of the object's monitor
+     * @throws InterruptedException         if any thread interrupted the current
+     *                                      thread before or
+     *                                      while the current thread was waiting.
+     *                                      The <em>interrupted status</em> of the
+     *                                      current thread is cleared when this
+     *                                      exception is thrown.
+     * @see #notify()
+     * @see #notifyAll()
+     * @see #wait()
+     * @see #wait(long)
      */
     public final void wait(long timeoutMillis, int nanos) throws InterruptedException {
         if (timeoutMillis < 0) {
@@ -606,7 +659,7 @@ public class Object {
 
         if (nanos < 0 || nanos > 999999) {
             throw new IllegalArgumentException(
-                                "nanosecond timeout value out of range");
+                    "nanosecond timeout value out of range");
         }
 
         if (nanos > 0) {
@@ -662,22 +715,30 @@ public class Object {
      * ignored.
      *
      * @apiNote
-     * Classes that embed non-heap resources have many options
-     * for cleanup of those resources. The class must ensure that the
-     * lifetime of each instance is longer than that of any resource it embeds.
-     * {@link java.lang.ref.Reference#reachabilityFence} can be used to ensure that
-     * objects remain reachable while resources embedded in the object are in use.
-     * <p>
-     * A subclass should avoid overriding the {@code finalize} method
-     * unless the subclass embeds non-heap resources that must be cleaned up
-     * before the instance is collected.
-     * Finalizer invocations are not automatically chained, unlike constructors.
-     * If a subclass overrides {@code finalize} it must invoke the superclass
-     * finalizer explicitly.
-     * To guard against exceptions prematurely terminating the finalize chain,
-     * the subclass should use a {@code try-finally} block to ensure
-     * {@code super.finalize()} is always invoked. For example,
-     * <pre>{@code      @Override
+     *          Classes that embed non-heap resources have many options
+     *          for cleanup of those resources. The class must ensure that the
+     *          lifetime of each instance is longer than that of any resource it
+     *          embeds.
+     *          {@link java.lang.ref.Reference#reachabilityFence} can be used to
+     *          ensure that
+     *          objects remain reachable while resources embedded in the object are
+     *          in use.
+     *          <p>
+     *          A subclass should avoid overriding the {@code finalize} method
+     *          unless the subclass embeds non-heap resources that must be cleaned
+     *          up
+     *          before the instance is collected.
+     *          Finalizer invocations are not automatically chained, unlike
+     *          constructors.
+     *          If a subclass overrides {@code finalize} it must invoke the
+     *          superclass
+     *          finalizer explicitly.
+     *          To guard against exceptions prematurely terminating the finalize
+     *          chain,
+     *          the subclass should use a {@code try-finally} block to ensure
+     *          {@code super.finalize()} is always invoked. For example,
+     * 
+     *          <pre>{@code      @Override
      *     protected void finalize() throws Throwable {
      *         try {
      *             ... // cleanup subclass state
@@ -688,26 +749,36 @@ public class Object {
      * }</pre>
      *
      * @deprecated The finalization mechanism is inherently problematic.
-     * Finalization can lead to performance issues, deadlocks, and hangs.
-     * Errors in finalizers can lead to resource leaks; there is no way to cancel
-     * finalization if it is no longer necessary; and no ordering is specified
-     * among calls to {@code finalize} methods of different objects.
-     * Furthermore, there are no guarantees regarding the timing of finalization.
-     * The {@code finalize} method might be called on a finalizable object
-     * only after an indefinite delay, if at all.
+     *             Finalization can lead to performance issues, deadlocks, and
+     *             hangs.
+     *             Errors in finalizers can lead to resource leaks; there is no way
+     *             to cancel
+     *             finalization if it is no longer necessary; and no ordering is
+     *             specified
+     *             among calls to {@code finalize} methods of different objects.
+     *             Furthermore, there are no guarantees regarding the timing of
+     *             finalization.
+     *             The {@code finalize} method might be called on a finalizable
+     *             object
+     *             only after an indefinite delay, if at all.
      *
-     * Classes whose instances hold non-heap resources should provide a method
-     * to enable explicit release of those resources, and they should also
-     * implement {@link AutoCloseable} if appropriate.
-     * The {@link java.lang.ref.Cleaner} and {@link java.lang.ref.PhantomReference}
-     * provide more flexible and efficient ways to release resources when an object
-     * becomes unreachable.
+     *             Classes whose instances hold non-heap resources should provide a
+     *             method
+     *             to enable explicit release of those resources, and they should
+     *             also
+     *             implement {@link AutoCloseable} if appropriate.
+     *             The {@link java.lang.ref.Cleaner} and
+     *             {@link java.lang.ref.PhantomReference}
+     *             provide more flexible and efficient ways to release resources
+     *             when an object
+     *             becomes unreachable.
      *
      * @throws Throwable the {@code Exception} raised by this method
      * @see java.lang.ref.WeakReference
      * @see java.lang.ref.PhantomReference
      * @jls 12.6 Finalization of Class Instances
      */
-    @Deprecated(since="9")
-    protected void finalize() throws Throwable { }
+    @Deprecated(since = "9")
+    protected void finalize() throws Throwable {
+    }
 }
