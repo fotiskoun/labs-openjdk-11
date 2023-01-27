@@ -1359,9 +1359,9 @@ JRT_LEAF(jint , JVMCIRuntime::object_hash_consumer_comp_array_length_get(JavaThr
 JRT_END
 
 
-// YES Object.hash_memory_starting_pos_get() fast path, caller does slow path
+// YES Object.object_hash_consumer_map_arrays_index() fast path, caller does slow path
 //TODO: CHANGING THAT JUST TO RETURN FOR NOW THE ARRAYSCREATEDINDEX
-JRT_LEAF(jint , JVMCIRuntime::object_hash_memory_starting_pos_get(JavaThread * thread, typeArrayOopDesc * ar1))
+JRT_LEAF(jint , JVMCIRuntime::object_hash_consumer_map_arrays_index(JavaThread * thread, typeArrayOopDesc * ar1))
 return keepReturnItem.arraysCreatedIndex;
 
 JRT_END

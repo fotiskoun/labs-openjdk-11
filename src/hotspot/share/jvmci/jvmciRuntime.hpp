@@ -405,7 +405,7 @@ class JVMCIRuntime: public CHeapObj<mtJVMCI> {
   static jlong object_hash_memory_copies_array_get(JavaThread* thread, typeArrayOopDesc*  ar1);
   static jlong object_hash_memory_copies_starting_pos_get(JavaThread* thread, typeArrayOopDesc* ar1);
   static void object_hash_dupl_array_get(JavaThread* thread, typeArrayOopDesc* ar1);
-  static jint object_hash_memory_starting_pos_get(JavaThread* thread, typeArrayOopDesc* ar1);
+  static jint object_hash_consumer_map_arrays_index(JavaThread* thread, typeArrayOopDesc* ar1);
   static void object_hash_consumer_get(JavaThread* thread, typeArrayOopDesc* ar1);
   static void object_hash_consumer_lengths_get(JavaThread* thread, typeArrayOopDesc* ar1);
   static jint object_hash_consumer_comp_array_length_get(JavaThread* thread, typeArrayOopDesc* ar1);

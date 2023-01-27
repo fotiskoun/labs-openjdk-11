@@ -782,8 +782,8 @@
    do_name(     hash_consumer_lengths_get_name,                  "hash_consumer_lengths_get")                           \
   do_intrinsic(_hash_dupl_array_get,      java_lang_Object,       hash_dupl_array_get_name, obj_vo_signature,   F_R)    \
    do_name(     hash_dupl_array_get_name,                        "hash_dupl_array_get")                                 \
-  do_intrinsic(_hash_memory_starting_pos_get, java_lang_Object,   hash_memory_starting_pos_get_name, obj_int_signature, F_R) \
-   do_name(     hash_memory_starting_pos_get_name,               "hash_memory_starting_pos_get")                        \
+  do_intrinsic(_hash_consumer_map_arrays_index, java_lang_Object,   hash_consumer_map_arrays_index_name, obj_int_signature, F_R) \
+   do_name(     hash_consumer_map_arrays_index_name,               "hash_consumer_map_arrays_index")                        \
   do_intrinsic(_hash_consumer_get,        java_lang_Object,       hash_consumer_get_name, obj_vo_signature,   F_R)      \
    do_name(     hash_consumer_get_name,                          "hash_consumer_get")                                   \
   do_intrinsic(_hash_consumer_comp_array_length_get, java_lang_Object, hash_consumer_comp_array_length_get_name, obj_int_signature,   F_R)  \

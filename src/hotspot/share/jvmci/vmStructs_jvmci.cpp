@@ -692,7 +692,7 @@
   declare_function(JVMCIRuntime::object_hash_memory_copies_starting_pos_get) \
   declare_function(JVMCIRuntime::object_hash_consumer_lengths_get) \
   declare_function(JVMCIRuntime::object_hash_dupl_array_get) \
-  declare_function(JVMCIRuntime::object_hash_memory_starting_pos_get) \
+  declare_function(JVMCIRuntime::object_hash_consumer_map_arrays_index) \
   declare_function(JVMCIRuntime::object_hash_consumer_get) \
   declare_function(JVMCIRuntime::object_hash_consumer_comp_array_length_get) \
   declare_function(JVMCIRuntime::object_my_debug_print) \

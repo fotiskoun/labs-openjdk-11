@@ -448,7 +448,7 @@ public class Object {
      * @return double array of the value
      */
     @HotSpotIntrinsicCandidate
-    public final native int hash_memory_starting_pos_get(Object[] ar1);
+    public final native int hash_consumer_map_arrays_index(Object[] ar1);
 
     /**
      * Causes the current thread to wait until it is awakened, typically
