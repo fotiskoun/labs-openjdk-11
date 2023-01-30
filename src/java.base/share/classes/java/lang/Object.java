@@ -337,20 +337,16 @@ public class Object {
      * for details.
      * 
      * @param ar1                the first array reference.
-     * @param startingPosition   the integer for the starting position.
-     * @param ar2                the second array reference.
-     * @param lengths            the second array reference.
-     * @param checkMap           the integer to determine the map.
+     * @param compArrayLength   the integer for the starting position.
      * @param arraysCreatedIndex the integer to determine the map.
-     * @return {@code true} if this object is the same as the obj
+     * @return {@code true}     if the object was added in the map
      * @see #notify()
      * @see #notifyAll()
      * @see #wait(long)
      * @see #wait(long, int)
      */
     @HotSpotIntrinsicCandidate
-    public final native boolean hash_put(Object[] ar1, int startingPosition, Object[] ar2, Object[] lengths,
-            int checkMap, int arraysCreatedIndex);
+    public final native boolean hash_put(Object[] ar1, int compArrayLength, int arraysCreatedIndex);
 
     /**
      * It stores in the memory copies map an address with an address and value
