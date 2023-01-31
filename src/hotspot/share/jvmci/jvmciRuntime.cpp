@@ -46,8 +46,8 @@
 #include "gc/g1/g1ThreadLocalData.hpp"
 #endif // INCLUDE_G1GC
 
-#define MEM_COPY_CAPACITY 65536 // Size of the Hash Table
-#define CONSUMER_CAPACITY 524288 // Size of the Hash Table
+#define MEM_COPY_CAPACITY 2097152 // Size of the Hash Table
+#define CONSUMER_CAPACITY 2097152 // Size of the Hash Table
 #define DUPL_CAPACITY 1000 // Size of the Hash Table
 #define QUEUESIZE  10
 
@@ -751,7 +751,7 @@ bool ht_insert_mem_map(HashMemTable *table, typeArrayOopDesc *key, jint starting
   Ht_mem_item *item = create_mem_item(key, startingPosition, value);
 
   // Compute the index
-  int index = hash_function(key, -1);
+  int index = mod_hash((long)key, (long)MEM_COPY_CAPACITY)/*hash_function(key, -1)*/;
 
   Ht_mem_item *current_item = table->items[index];
   if (current_item == NULL) {
