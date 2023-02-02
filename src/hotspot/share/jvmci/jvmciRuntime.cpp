@@ -46,8 +46,8 @@
 #include "gc/g1/g1ThreadLocalData.hpp"
 #endif // INCLUDE_G1GC
 
-#define MEM_COPY_CAPACITY 2097152 // Size of the Hash Table
-#define CONSUMER_CAPACITY 2097152 // Size of the Hash Table
+#define MEM_COPY_CAPACITY 4194304 // Size of the Hash Table
+#define CONSUMER_CAPACITY 16777216	 // Size of the Hash Table
 #define DUPL_CAPACITY 1000 // Size of the Hash Table
 #define QUEUESIZE  10
 
@@ -781,9 +781,10 @@ bool ht_insert_mem_map(HashMemTable *table, typeArrayOopDesc *key, jint starting
   }
 }
 
-void handle_consumer_collision(HashConsTable *table, Ht_cons_item *item, int index) {
+void handle_consumer_collision(HashConsTable *table, Ht_cons_item *item, int index)
+{
   for (int i = 1; i < CONSUMER_CAPACITY; i++) {
-    int modIndex = (index + i) & (CONSUMER_CAPACITY-1);
+    int modIndex = (index + i) & (CONSUMER_CAPACITY - 1);
     Ht_cons_item *current_item = table->items[modIndex];
     if (current_item == NULL) {
       table->items[modIndex] = item;
@@ -883,10 +884,10 @@ bool ht_insert_dupl_map(HashDuplTable *table, typeArrayOopDesc *key, typeArrayOo
   }
 }
 
-
-void handle_mem_copies_collision(HashMemoryCopiesTable *table, Ht_mem_copies_item *item, int index) {
+void handle_mem_copies_collision(HashMemoryCopiesTable *table, Ht_mem_copies_item *item, int index)
+{
   for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
-    int modIndex = (index + i) & (MEM_COPY_CAPACITY-1);
+    int modIndex = (index + i) & (MEM_COPY_CAPACITY - 1);
     Ht_mem_copies_item *current_item = table->items[modIndex];
     if (current_item == NULL) {
       table->items[modIndex] = item;
@@ -1318,6 +1319,7 @@ JRT_END
 // YES Object.hash_consumer_get_compLengt() fast path, caller does slow path
 JRT_LEAF(jint , JVMCIRuntime::object_hash_consumer_comp_array_length_get(JavaThread * thread, typeArrayOopDesc * ar1))
   ht_search_consumer_lengths_struct_get(htConsumer, ar1, keepReturnItem);
+
   return keepReturnItem.arSize;
 
 JRT_END
