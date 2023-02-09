@@ -417,7 +417,14 @@ int raMod(int a, int b)
   return r < 0 ? r + b : r;
 }
 
-pthread_mutex_t mtxMemcopies=PTHREAD_MUTEX_INITIALIZER;
+long lastBaseAddress = 0;
+struct consumer_res {
+    int arSize;
+    int arraysCreatedIndex;
+};
+
+consumer_res checkItem;
+
 
 UNSAFE_ENTRY(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobject srcObj, jlong srcOffset, jobject dstObj, jlong dstOffset, jlong size)) {
   size_t sz = (size_t)size;
@@ -427,29 +434,45 @@ UNSAFE_ENTRY(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobject srcOb
 
   void* src = index_oop_from_field_offset_long(srcp, srcOffset);
   void* dst = index_oop_from_field_offset_long(dstp, dstOffset);
-  if (size> 80l) { // This means it needs to transfer at least 80 bytes or at least 10 elems from the long array
-    long keyInMap;
-    long valueInMap = srcOffset;
-    long startPosInMap = 0;
-    keyInMap = (long)dst;
+
+  long valueInMap = srcOffset;
+  long startPosInMap = 0;
+
+  if (size > 80l)
+  { // This means it needs to transfer at least 80 bytes or at least 10 elems from the long array
+    long keyInMap = (long)dst;
+
     if ((long) dstObj > 0) {
-      for (int raIn=raIndex; raIn>raIndex-raMapSize; raIn--) {
-        if (srcOffset >= raMap[raMod(raIn,raMapSize)].baseAddress and srcOffset < raMap[raMod(raIn,raMapSize)].baseAddress + raMap[raMod(raIn,raMapSize)].rangeSize) {
-          valueInMap = raMap[raMod(raIn,raMapSize)].baseAddress;
-          startPosInMap = srcOffset - raMap[raMod(raIn,raMapSize)].baseAddress;
-        }
-      }
+    //   for (int raIn=raIndex; raIn>raIndex-raMapSize; raIn--) {
+    //     int index = raMod(raIn, raMapSize);
+    //     if (srcOffset >= raMap[index].baseAddress and srcOffset < raMap[index].baseAddress + raMap[index].rangeSize)
+    //     {
+          valueInMap = lastBaseAddress; // raMap[index].baseAddress;
+          startPosInMap = srcOffset - lastBaseAddress; //raMap[index].baseAddress;
+      //   }
+      // }
     } else {
-      raMap[raIndex].baseAddress = keyInMap;
-      raMap[raIndex].rangeSize = size;
-      raIndex = raMod(raIndex+1,raMapSize);
+      /*raMap[raIndex].baseAddress*/ lastBaseAddress = keyInMap;
+      // raMap[raIndex].rangeSize = size;
+      // raIndex = raMod(raIndex+1,raMapSize);
     }
-    // pthread_mutex_lock(&mtxMemcopies);
     ht_insert_mem_copies_map(htMemoryCopies, keyInMap, valueInMap, startPosInMap);
-    // pthread_mutex_unlock(&mtxMemcopies);
   }
 
-  Copy::conjoint_memory_atomic(src, dst, sz);
+    long valueAddress = ht_search_mem_copies_array(htMemoryCopies, (long)dst);
+    long startPos = ht_search_mem_copies_starting_pos(htMemoryCopies, (long)dst);
+    long loopValueAddress = ht_search_mem_copies_array(htMemoryCopies, valueAddress);
+    while ( loopValueAddress!=-1){
+      startPos += ht_search_mem_copies_starting_pos(htMemoryCopies, valueAddress);
+      valueAddress = loopValueAddress;
+      loopValueAddress = ht_search_mem_copies_array(htMemoryCopies, valueAddress);
+    }
+
+  ht_search_consumer_lengths_struct_get(htConsumer, (typeArrayOopDesc *)(valueAddress+startPos),checkItem);   
+  if (checkItem.arSize==0) {
+    Copy::conjoint_memory_atomic(src, dst, sz);
+  }
+
 } UNSAFE_END
 
 // This function is a leaf since if the source and destination are both in native memory

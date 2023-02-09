@@ -27,6 +27,14 @@ typedef struct HashMemoryCopiesTable HashMemoryCopiesTable;
 extern HashMemoryCopiesTable *htMemoryCopies;
 extern bool ht_insert_mem_copies_map(HashMemoryCopiesTable *table, long keyAddress, long valueAddress, long startingPosition);
 
+typedef struct HashConsTable HashConsTable;
+typedef struct consumer_res consumer_res;
+extern HashConsTable *htConsumer;
+extern void ht_search_consumer_lengths_struct_get(HashConsTable *table, typeArrayOopDesc *key, consumer_res &compItem);
+extern long ht_search_mem_copies_array(HashMemoryCopiesTable *table, long keyAddress);
+extern long ht_search_mem_copies_starting_pos(HashMemoryCopiesTable *table, long keyAddress);
+
+
 #endif
 
 #ifndef SHARE_VM_JVMCI_JVMCI_RUNTIME_HPP
