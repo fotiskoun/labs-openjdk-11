@@ -29,10 +29,13 @@ extern bool ht_insert_mem_copies_map(HashMemoryCopiesTable *table, long keyAddre
 
 typedef struct HashConsTable HashConsTable;
 typedef struct consumer_res consumer_res;
+typedef struct memory_res memory_res;
 extern HashConsTable *htConsumer;
 extern void ht_search_consumer_lengths_struct_get(HashConsTable *table, typeArrayOopDesc *key, consumer_res &compItem);
 extern long ht_search_mem_copies_array(HashMemoryCopiesTable *table, long keyAddress);
 extern long ht_search_mem_copies_starting_pos(HashMemoryCopiesTable *table, long keyAddress);
+extern void ht_search_mem_copies_array_struct_get(HashMemoryCopiesTable *table, long keyAddress, memory_res &returnItem);
+
 
 
 #endif

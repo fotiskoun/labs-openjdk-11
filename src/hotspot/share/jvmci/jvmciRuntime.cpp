@@ -22,6 +22,8 @@
  */
 
 #include <typeinfo>
+#include <prims/unsafe.hpp>
+
 
 #include "precompiled.hpp"
 #include "compiler/compileBroker.hpp"
@@ -1087,6 +1089,11 @@ struct consumer_res {
     int arraysCreatedIndex;
 };
 
+struct memory_res {
+    long valueAddress;
+    long startingPosition;
+};
+
 void ht_search_consumer_lengths_struct_get(HashConsTable *table, typeArrayOopDesc *key, consumer_res &compItem) {
   // Searches the key in the hashtable
   // and returns NULL if it doesn't exist
@@ -1152,6 +1159,45 @@ void ht_search_consumer_lengths_struct_get(HashConsTable *table, typeArrayOopDes
 //   }
 //   return -1;
 // }
+
+
+void ht_search_mem_copies_array_struct_get(HashMemoryCopiesTable *table, long keyAddress, memory_res &returnItem) {
+  // Searches the key in the hashtable
+  long index =  mod_hash((long) keyAddress, (long) MEM_COPY_CAPACITY);
+  Ht_mem_copies_item *item = table->items[index];
+
+
+  // Ensure that we move to a non NULL item
+  if (item != NULL) {
+    if (item->keyAddress == keyAddress) {
+      returnItem.valueAddress =  item->valueAddress;
+      returnItem.startingPosition = item->startingPosition;
+      return;
+    }
+    else
+    {
+      //CHECK FOR COLLISIONS
+      for (int i = 1; i < MEM_COPY_CAPACITY; i++) {
+        Ht_mem_copies_item *collisionItem = table->items[(index + i) & (MEM_COPY_CAPACITY-1)];
+        if (collisionItem != NULL) {
+          if (collisionItem->keyAddress == keyAddress) {
+            returnItem.valueAddress =  collisionItem->valueAddress;
+            returnItem.startingPosition =  collisionItem->startingPosition;
+            return;
+          }
+        } else {
+          //The item is not here
+          returnItem.valueAddress =  -1;
+          returnItem.startingPosition = -1;
+          return;       }
+      }
+    }
+  }
+  returnItem.valueAddress =  -1;
+  returnItem.startingPosition = -1;
+  return;
+}
+
 
 long ht_search_mem_copies_array(HashMemoryCopiesTable *table, long keyAddress) {
   // Searches the key in the hashtable
@@ -1254,19 +1300,24 @@ JRT_LEAF(jboolean,
 
 JRT_END
 
+memory_res returnMapValue;
+
 // YES Object.hash_memory_copies_array_get() fast path, caller does slow path
 JRT_LEAF(jlong , JVMCIRuntime::object_hash_memory_copies_array_get(JavaThread* thread, typeArrayOopDesc*  ar1))
 
   long keyAddress = (long) ar1;
-  long valueAddress = ht_search_mem_copies_array(htMemoryCopies, keyAddress);
-  long startPos = ht_search_mem_copies_starting_pos(htMemoryCopies, keyAddress);
-
-  while ( ht_search_mem_copies_array(htMemoryCopies, valueAddress)!=-1){
-    startPos += ht_search_mem_copies_starting_pos(htMemoryCopies, valueAddress);
-    valueAddress = ht_search_mem_copies_array(htMemoryCopies, valueAddress);
+  ht_search_mem_copies_array_struct_get(htMemoryCopies, keyAddress, returnMapValue);
+  long valueAddress = returnMapValue.valueAddress; // ht_search_mem_copies_array(htMemoryCopies, keyAddress);
+  long startPos = returnMapValue.startingPosition; // ht_search_mem_copies_starting_pos(htMemoryCopies, keyAddress);
+  ht_search_mem_copies_array_struct_get(htMemoryCopies, valueAddress, returnMapValue);
+  while ( returnMapValue.valueAddress!=-1){
+    valueAddress = returnMapValue.valueAddress;
+    startPos += returnMapValue.startingPosition;
+    ht_search_mem_copies_array_struct_get(htMemoryCopies, valueAddress, returnMapValue);
   }
   return valueAddress+startPos;
 JRT_END
+
 
 // Object.hash_memory_copies_starting_pos_get() fast path, caller does slow path
 JRT_LEAF(jlong , JVMCIRuntime::object_hash_memory_copies_starting_pos_get(JavaThread * thread, typeArrayOopDesc * ar1))
@@ -1319,6 +1370,9 @@ JRT_END
 // YES Object.hash_consumer_get_compLengt() fast path, caller does slow path
 JRT_LEAF(jint , JVMCIRuntime::object_hash_consumer_comp_array_length_get(JavaThread * thread, typeArrayOopDesc * ar1))
   ht_search_consumer_lengths_struct_get(htConsumer, ar1, keepReturnItem);
+  // if (keepReturnItem.arSize != checkItem.arSize){
+  //   printf("NOT EQUAL keep=%d check%d\n", keepReturnItem.arSize, checkItem.arSize);
+  // }
 
   return keepReturnItem.arSize;
 

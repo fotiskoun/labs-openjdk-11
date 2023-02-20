@@ -423,7 +423,14 @@ struct consumer_res {
     int arraysCreatedIndex;
 };
 
+
+struct memory_res {
+    long valueAddress;
+    long startingPosition;
+};
+
 consumer_res checkItem;
+memory_res memoryMapValue;
 
 
 UNSAFE_ENTRY(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobject srcObj, jlong srcOffset, jobject dstObj, jlong dstOffset, jlong size)) {
@@ -459,14 +466,25 @@ UNSAFE_ENTRY(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobject srcOb
     ht_insert_mem_copies_map(htMemoryCopies, keyInMap, valueInMap, startPosInMap);
   }
 
-    long valueAddress = ht_search_mem_copies_array(htMemoryCopies, (long)dst);
-    long startPos = ht_search_mem_copies_starting_pos(htMemoryCopies, (long)dst);
-    long loopValueAddress = ht_search_mem_copies_array(htMemoryCopies, valueAddress);
-    while ( loopValueAddress!=-1){
-      startPos += ht_search_mem_copies_starting_pos(htMemoryCopies, valueAddress);
-      valueAddress = loopValueAddress;
-      loopValueAddress = ht_search_mem_copies_array(htMemoryCopies, valueAddress);
+    // long valueAddress = ht_search_mem_copies_array(htMemoryCopies, (long)dst);
+    // long startPos = ht_search_mem_copies_starting_pos(htMemoryCopies, (long)dst);
+    // long loopValueAddress = ht_search_mem_copies_array(htMemoryCopies, valueAddress);
+    // while ( loopValueAddress!=-1){
+    //   startPos += ht_search_mem_copies_starting_pos(htMemoryCopies, valueAddress);
+    //   valueAddress = loopValueAddress;
+    //   loopValueAddress = ht_search_mem_copies_array(htMemoryCopies, valueAddress);
+    // }
+
+    ht_search_mem_copies_array_struct_get(htMemoryCopies, (long)dst, memoryMapValue);
+    long valueAddress = memoryMapValue.valueAddress;
+    long startPos = memoryMapValue.startingPosition;
+    ht_search_mem_copies_array_struct_get(htMemoryCopies, valueAddress, memoryMapValue);
+    while ( memoryMapValue.valueAddress!=-1){
+      valueAddress = memoryMapValue.valueAddress;
+      startPos += memoryMapValue.startingPosition;
+      ht_search_mem_copies_array_struct_get(htMemoryCopies, valueAddress, memoryMapValue);
     }
+
 
   ht_search_consumer_lengths_struct_get(htConsumer, (typeArrayOopDesc *)(valueAddress+startPos),checkItem);   
   if (checkItem.arSize==0) {

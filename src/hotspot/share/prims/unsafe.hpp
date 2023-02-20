@@ -27,6 +27,8 @@
 #define SHARE_VM_PRIMS_UNSAFE_HPP
 
 #include "jni.h"
+typedef struct consumer_res consumer_res;
+extern consumer_res checkItem;
 
 extern "C" {
   void JNICALL JVM_RegisterJDKInternalMiscUnsafeMethods(JNIEnv *env, jclass unsafecls);
