@@ -1304,8 +1304,8 @@ memory_res returnMapValue;
 
 // YES Object.hash_memory_copies_array_get() fast path, caller does slow path
 JRT_LEAF(jlong , JVMCIRuntime::object_hash_memory_copies_array_get(JavaThread* thread, typeArrayOopDesc*  ar1))
-
   long keyAddress = (long) ar1;
+//  printf("the keyarray %ld", keyAddress);
   ht_search_mem_copies_array_struct_get(htMemoryCopies, keyAddress, returnMapValue);
   long valueAddress = returnMapValue.valueAddress; // ht_search_mem_copies_array(htMemoryCopies, keyAddress);
   long startPos = returnMapValue.startingPosition; // ht_search_mem_copies_starting_pos(htMemoryCopies, keyAddress);

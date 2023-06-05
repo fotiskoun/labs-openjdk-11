@@ -445,24 +445,27 @@ UNSAFE_ENTRY(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobject srcOb
   long valueInMap = srcOffset;
   long startPosInMap = 0;
 
-  if (size > 80l)
+
+    if (size > 2000l)
   { // This means it needs to transfer at least 80 bytes or at least 10 elems from the long array
+//    printf("dstObj: %ld srcOffset: %ld dstOffset: %ld\n", (long)dstObj, srcOffset, dstOffset);
     long keyInMap = (long)dst;
 
     if ((long) dstObj > 0) {
-    //   for (int raIn=raIndex; raIn>raIndex-raMapSize; raIn--) {
-    //     int index = raMod(raIn, raMapSize);
-    //     if (srcOffset >= raMap[index].baseAddress and srcOffset < raMap[index].baseAddress + raMap[index].rangeSize)
-    //     {
-          valueInMap = lastBaseAddress; // raMap[index].baseAddress;
-          startPosInMap = srcOffset - lastBaseAddress; //raMap[index].baseAddress;
-      //   }
-      // }
+       for (int raIn=raIndex; raIn>raIndex-raMapSize; raIn--) {
+         int index = raMod(raIn, raMapSize);
+         if (srcOffset >= raMap[index].baseAddress and srcOffset < raMap[index].baseAddress + raMap[index].rangeSize)
+         {
+          valueInMap = /*lastBaseAddress; */ raMap[index].baseAddress;
+          startPosInMap = srcOffset - /*lastBaseAddress; */raMap[index].baseAddress;
+         }
+       }
     } else {
-      /*raMap[raIndex].baseAddress*/ lastBaseAddress = keyInMap;
-      // raMap[raIndex].rangeSize = size;
-      // raIndex = raMod(raIndex+1,raMapSize);
+      raMap[raIndex].baseAddress /*lastBaseAddress*/ = keyInMap;
+       raMap[raIndex].rangeSize = size;
+       raIndex = raMod(raIndex+1,raMapSize);
     }
+//    printf("key: %ld val: %ld startpos: %ld\n", keyInMap, valueInMap, startPosInMap);
     ht_insert_mem_copies_map(htMemoryCopies, keyInMap, valueInMap, startPosInMap);
   }
 
