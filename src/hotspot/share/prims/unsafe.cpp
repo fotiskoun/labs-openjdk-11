@@ -490,9 +490,9 @@ UNSAFE_ENTRY(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobject srcOb
 
 
   ht_search_consumer_lengths_struct_get(htConsumer, (typeArrayOopDesc *)(valueAddress+startPos),checkItem);   
-  if (checkItem.arSize==0) {
+//  if (checkItem.arSize==0) {
     Copy::conjoint_memory_atomic(src, dst, sz);
-  }
+//  }
 
 } UNSAFE_END
 
