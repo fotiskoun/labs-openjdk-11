@@ -47,6 +47,7 @@ class CompilerOracle : AllStatic {
 
   // Tells whether we to exclude compilation of method
   static bool should_exclude(const methodHandle& method);
+  static bool should_include(const methodHandle& method);
   static bool should_exclude_quietly() { return _quiet; }
 
   // Tells whether we want to inline this method

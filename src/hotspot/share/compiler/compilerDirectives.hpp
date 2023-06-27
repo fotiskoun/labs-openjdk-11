@@ -35,6 +35,7 @@
   #define compilerdirectives_common_flags(cflags) \
     cflags(Enable,                  bool, false, X) \
     cflags(Exclude,                 bool, false, X) \
+    cflags(Include,                 bool, false, X) \
     cflags(BreakAtExecute,          bool, false, X) \
     cflags(BreakAtCompile,          bool, false, X) \
     cflags(Log,                     bool, LogCompilation, X) \

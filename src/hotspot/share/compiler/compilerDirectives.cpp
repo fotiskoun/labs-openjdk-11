@@ -279,6 +279,12 @@ DirectiveSet* DirectiveSet::compilecommand_compatibility_init(const methodHandle
         changed = true;
       }
     }
+    if (CompilerOracle::should_include(method)) {
+      if (!_modified[IncludeIndex]) {
+        set->IncludeOption = true;
+        changed = true;
+      }
+    }
 
     // Read old value of DisableIntrinsicOption, in case we need to free it
     // and overwrite it with a new value.

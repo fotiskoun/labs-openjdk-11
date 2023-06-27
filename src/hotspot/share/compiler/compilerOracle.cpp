@@ -78,6 +78,7 @@ enum OracleCommand {
   BreakCommand = OracleFirstCommand,
   PrintCommand,
   ExcludeCommand,
+  IncludeCommand,
   InlineCommand,
   DontInlineCommand,
   CompileOnlyCommand,
@@ -93,6 +94,7 @@ static const char * command_names[] = {
   "break",
   "print",
   "exclude",
+  "include",
   "inline",
   "dontinline",
   "compileonly",
@@ -347,6 +349,13 @@ bool CompilerOracle::should_exclude(const methodHandle& method) {
   return false;
 }
 
+bool CompilerOracle::should_include(const methodHandle& method) {
+  if (check_predicate(IncludeCommand, method)) {
+    return true;
+  }
+  return false;
+}
+
 bool CompilerOracle::should_inline(const methodHandle& method) {
   return (check_predicate(InlineCommand, method));
 }
@@ -400,6 +409,7 @@ static void usage() {
   tty->print_cr("  break,<pattern>       - debug breakpoint in compiler and in generated code");
   tty->print_cr("  print,<pattern>       - print assembly");
   tty->print_cr("  exclude,<pattern>     - don't compile or inline");
+  tty->print_cr("  include,<pattern>     - force compile");
   tty->print_cr("  inline,<pattern>      - always inline");
   tty->print_cr("  dontinline,<pattern>  - don't inline");
   tty->print_cr("  compileonly,<pattern> - compile only");

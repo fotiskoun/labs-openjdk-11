@@ -1252,7 +1252,7 @@ nmethod* CompileBroker::compile_method(const methodHandle& method, int osr_bci,
   // isn't prohibited in a straightforward way.
   AbstractCompiler* comp = CompileBroker::compiler(comp_level);
   if (comp == NULL || !comp->can_compile_method(method) ||
-      compilation_is_prohibited(method, osr_bci, comp_level, directive->ExcludeOption)) {
+      compilation_is_prohibited(method, osr_bci, comp_level, directive->ExcludeOption, directive->IncludeOption)) {
     return NULL;
   }
 
@@ -1429,7 +1429,7 @@ bool CompileBroker::compilation_is_in_queue(const methodHandle& method) {
 // CompileBroker::compilation_is_prohibited
 //
 // See if this compilation is not allowed.
-bool CompileBroker::compilation_is_prohibited(const methodHandle& method, int osr_bci, int comp_level, bool excluded) {
+bool CompileBroker::compilation_is_prohibited(const methodHandle& method, int osr_bci, int comp_level, bool excluded, bool included) {
   bool is_native = method->is_native();
   // Some compilers may not support the compilation of natives.
   AbstractCompiler *comp = compiler(comp_level);
@@ -1445,6 +1445,10 @@ bool CompileBroker::compilation_is_prohibited(const methodHandle& method, int os
       (!CICompileOSR || comp == NULL || !comp->supports_osr())) {
     method->set_not_osr_compilable("OSR not supported", comp_level);
     return true;
+  }
+
+  if (included){
+    return false;
   }
 
   // The method may be explicitly excluded by the user.
