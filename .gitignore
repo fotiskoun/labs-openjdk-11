@@ -25,3 +25,4 @@ NashornProfile.txt
 **/.pydevproject
 **/.settings/
 **/*.pyc
+src/utils/hsdis/build/
