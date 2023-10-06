@@ -334,7 +334,9 @@ def main():
         configure_options.extend(opts.configure_option)
 
     check_call(["sh", "configure"] + configure_options, cwd=jdk_src_dir)
-    check_call([opts.make, "LOG=info", "CONF=" + conf_name, "product-bundles", "static-libs-bundles"], cwd=jdk_src_dir)
+    sout = open("sout.txt", "w")
+    serr = open("serr.txt", "w")
+    check_call([opts.make, "LOG=info" ,"CONF=" + conf_name, "product-bundles", "static-libs-bundles"], stdout=sout, stderr=serr, cwd=jdk_src_dir)
 
     bundles_dir = join(build_dir, conf_name, 'bundles')
 

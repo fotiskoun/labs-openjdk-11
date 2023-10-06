@@ -898,6 +898,7 @@ class CompileReplay : public StackObj {
     const char* klass_name =  method->method_holder()->name()->as_utf8();
     const char* method_name = method->name()->as_utf8();
     const char* signature = method->signature()->as_utf8();
+    tty->print("I find find_ciMethodRecord\n");
     for (int i = 0; i < _ci_method_records.length(); i++) {
       ciMethodRecord* rec = _ci_method_records.at(i);
       if (strcmp(rec->_klass_name, klass_name) == 0 &&

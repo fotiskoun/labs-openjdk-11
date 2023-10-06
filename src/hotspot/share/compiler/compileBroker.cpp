@@ -1363,6 +1363,7 @@ nmethod* CompileBroker::compile_method(const methodHandle& method, int osr_bci,
     // If the compiler is shut off due to code cache getting full
     // fail out now so blocking compiles dont hang the java thread
     if (!should_compile_new_jobs()) {
+      tty->print("code cahce is getting full");
       CompilationPolicy::policy()->delay_compilation(method());
       return NULL;
     }

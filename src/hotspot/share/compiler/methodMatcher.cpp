@@ -377,10 +377,18 @@ BasicMatcher* BasicMatcher::parse_method_pattern(char* line, const char*& error_
   }
   return bm;
 }
-
+char* conc = (char *)"::";
 bool BasicMatcher::match(const methodHandle& method) {
   for (BasicMatcher* current = this; current != NULL; current = current->next()) {
     if (current->matches(method)) {
+
+      char* hereToDebug = method->name_and_sig_as_C_string();
+      char* checkPrinted = (char *) "org.apache.druid.segment.data.LongsLongEncodingReader.read([JI[IIII)I";
+      if( strcmp(hereToDebug, checkPrinted) == 0)
+      {
+        printf("It's in matcher\n");
+      }
+
       return true;
     }
   }

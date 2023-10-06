@@ -109,6 +109,17 @@ bool CompilationPolicy::must_be_compiled(const methodHandle& m, int comp_level) 
 
 void CompilationPolicy::compile_if_required(const methodHandle& selected_method, TRAPS) {
   if (must_be_compiled(selected_method)) {
+    char* hereToDebug = selected_method->name_and_sig_as_C_string();
+    char* checkPrinted = (char *) "org.apache.druid.segment.data.LongsLongEncodingReader.read([JI[IIII)I";
+    bool evalFirst = THREAD->can_call_java();
+    bool evalSecond = THREAD->is_Compiler_thread();
+    if( strcmp(hereToDebug, checkPrinted) == 0)
+    {
+      printf("It's the one\n");
+      if(!evalFirst || evalSecond){
+        printf("bad things\n");
+      }
+    }
     // This path is unusual, mostly used by the '-Xcomp' stress test mode.
 
     // Note: with several active threads, the must_be_compiled may be true

@@ -648,7 +648,7 @@ void CompilerOracle::parse_from_line(char* line) {
         // Print out the last match added
         assert(error_msg == NULL, "No error here");
         ttyLocker ttyl;
-        tty->print("CompileCommand: %s ", command_names[command]);
+        tty->print("Fot CompileCommand: %s ", command_names[command]);
         typed_matcher->print();
       }
       line += skip_whitespace(line);
@@ -667,7 +667,7 @@ void CompilerOracle::parse_from_line(char* line) {
     add_predicate(command, matcher);
     if (!_quiet) {
       ttyLocker ttyl;
-      tty->print("CompileCommand: %s ", command_names[command]);
+      tty->print("Fot2 CompileCommand: %s ", command_names[command]);
       matcher->print(tty);
       tty->cr();
     }
